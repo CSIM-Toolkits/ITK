@@ -6,28 +6,77 @@
 
 int main(int, char*[])
 {
-  // Setup types
-  typedef itk::Image<float, 2>   ImageType;
-  typedef itk::ImageFileReader<ImageType> ReaderType;
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-    typedef itk::AnisotropicAnomalousDiffusionImageFilter<ImageType, ImageType>  FilterType;
+ if ( argc < 5 )
+        {
+          std::cerr << "Missing parameters. " << std::endl;
+          std::cerr << "Usage: " << std::endl;
+          std::cerr << argv[0]
+                    << " inputImageFile outputImageFile Condutance Qvalue NumberOfIteration TimeStep"
+                    << std::endl;
+          return -1;
+        }
 
-  ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName("bizu.png");//Set other image filename. It's better if the image file is already float pixel data. 
-  reader->Update();
+    const unsigned int Dimension = 2;
 
-  // Create and set the filter parameters
-  FilterType::Pointer filter = FilterType::New();
-  filter->SetInput(reader->GetOutput());
-  filter->SetIterations(5);
-  filter->SetCondutance(5);
-  filter->SetQ(1.0);
-  filter->Update();
+    typedef unsigned char                       PixelType;
+    typedef unsigned char                       PixelOutType;
+    typedef itk::Image<PixelType, Dimension>    ImageType;
+    typedef itk::Image<PixelOutType, Dimension> ImageOutType;
+    typedef float                               CastPixelType;
+    typedef itk::Image<CastPixelType, Dimension> CastImageType;
 
-  WriterType::Pointer writer = WriterType::New();
-  writer->SetFileName("bizu-out.tif");//Set an output filename. Tif format file can save float pixel data.
-  writer->SetInput(filter->GetOutput());
-  writer->Update();
+    typedef itk::ImageFileReader<ImageType> ReaderType;
+    typedef itk::ImageFileWriter<CastImageType> WriterType;
+
+    ReaderType::Pointer reader = ReaderType::New();
+    reader->SetFileName(argv[1]);
+    try
+        {
+        reader->Update();
+        }
+      catch ( itk::ExceptionObject &err)
+        {
+        std::cerr << "ExceptionObject caught !" << std::endl;
+        std::cerr << err << std::endl;
+        return -1;
+        }
+
+    typedef itk::CastImageFilter<ImageType, CastImageType> CastType;
+    typename CastType::Pointer cast = CastType::New();
+    cast->SetInput(reader->GetOutput());
+    cast->Update();
+
+    typedef itk::AnisotropicAnomalousDiffusionImageFilter<CastImageType, CastImageType> FilterType;
+    FilterType::Pointer filter = FilterType::New();
+
+    filter->SetInput(cast->GetOutput());
+    filter->SetCondutance(std::atof(argv[3]));
+    filter->SetQ(std::atof(argv[4]));
+    filter->SetIterations(std::atoi(argv[5]));
+    filter->SetTimeStep(std::atof(argv[6]));
+    filter->Update();
+
+    typedef itk::CastImageFilter<CastImageType, ImageOutType> CastBackType;
+    typename CastBackType::Pointer castBack = CastBackType::New();
+    castBack->SetInput(filter->GetOutput());
+    castBack->Update();
+
+
+      WriterType::Pointer writer = WriterType::New();
+      writer->SetFileName(argv[2]);
+      writer->SetInput( filter->GetOutput() );
+
+
+      try
+        {
+        writer->Update();
+        }
+      catch ( itk::ExceptionObject &err)
+        {
+        std::cerr << "ExceptionObject caught !" << std::endl;
+        std::cerr << err << std::endl;
+        return -1;
+        }
 
   return EXIT_SUCCESS;
 }
