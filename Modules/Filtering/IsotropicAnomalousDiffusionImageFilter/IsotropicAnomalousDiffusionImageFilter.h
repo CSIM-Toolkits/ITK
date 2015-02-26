@@ -8,7 +8,7 @@ namespace itk
 {
 
 template< typename TInputImage, typename TOutputImage >
-class ITK_EXPORT itkIsotropicAnomalousDiffusionImageFilter:
+class ITK_EXPORT IsotropicAnomalousDiffusionImageFilter:
   public ImageToImageFilter< TInputImage, TOutputImage >
 {
 public:
@@ -23,7 +23,7 @@ public:
   typedef TOutputImage OutputImageType;
 
   /** Standard class typedefs. */
-  typedef itkIsotropicAnomalousDiffusionImageFilter                             Self;
+  typedef IsotropicAnomalousDiffusionImageFilter                             Self;
   typedef ImageToImageFilter< InputImageType, OutputImageType >                 Superclass;
   typedef SmartPointer< Self >                                                  Pointer;
   typedef SmartPointer< const Self >                                            ConstPointer;
@@ -32,11 +32,13 @@ public:
   itkNewMacro(Self)
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(itkIsotropicAnomalousDiffusionImageFilter, ImageToImageFilter)
+  itkTypeMacro(IsotropicAnomalousDiffusionImageFilter, ImageToImageFilter)
 
   typedef typename InputImageType::PixelType                 InputPixelType;
   typedef typename OutputImageType::PixelType                OutputPixelType;
-  typedef typename NumericTraits< InputPixelType >::RealType InputRealType;
+//  typedef typename NumericTraits< InputPixelType >::RealType InputRealType;
+
+  typedef typename Superclass::OutputImageRegionType OutputImageRegionType;
 
   itkSetMacro(GeneralizedDiffusion, double)
   itkSetMacro(Iterations, int)
@@ -54,19 +56,21 @@ public:
   itkConceptMacro( SameDimensionCheck,
                    ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
 
+
 #endif
 
 protected:
-  itkIsotropicAnomalousDiffusionImageFilter();
-  virtual ~itkIsotropicAnomalousDiffusionImageFilter() {}
+  IsotropicAnomalousDiffusionImageFilter();
+  virtual ~IsotropicAnomalousDiffusionImageFilter() {}
     double m_GeneralizedDiffusion;
     int m_Iterations;
     double m_TimeStep;
     double m_Q;
-  void GenerateData();
+//  void GenerateData();
+    virtual void ThreadedGenerateData(const OutputImageRegionType &, ThreadIdType);
 
 private:
-  itkIsotropicAnomalousDiffusionImageFilter(const Self &); //purposely not implemented
+  IsotropicAnomalousDiffusionImageFilter(const Self &); //purposely not implemented
   void operator=(const Self &);  //purposely not implemented
   void TimeStepTestStability();
   double GeneralizedDiffCurve();
@@ -74,7 +78,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkIsotropicAnomalousDiffusionImageFilter.hxx"
+#include "IsotropicAnomalousDiffusionImageFilter.hxx"
 #endif
 
 #endif

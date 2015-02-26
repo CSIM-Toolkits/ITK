@@ -1,19 +1,23 @@
 #ifndef __itkIsotropicAnomalousDiffusionImageFilter_hxx
 #define __itkIsotropicAnomalousDiffusionImageFilter_hxx
-#include "itkIsotropicAnomalousDiffusionImageFilter.h"
+#include "IsotropicAnomalousDiffusionImageFilter.h"
 
+#include <itkImage.h>
 #include <itkImageRegionIterator.h>
 #include <itkImageRegionConstIterator.h>
 #include <itkConstNeighborhoodIterator.h>
 #include <itkNeighborhoodIterator.h>
 #include <itkNeighborhoodOperator.h>
 #include <itkLaplacianOperator.h>
+#include <itkNeighborhoodInnerProduct.h>
+
+#include <itkDerivativeOperator.h>
 
 namespace itk
 {
 template< typename TInputImage, typename TOutputImage >
-itkIsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
-::itkIsotropicAnomalousDiffusionImageFilter()
+IsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
+::IsotropicAnomalousDiffusionImageFilter()
 {
     m_Q = 1.0;
     m_GeneralizedDiffusion = 1.0;
@@ -23,8 +27,8 @@ itkIsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
 
 template< typename TInputImage, typename TOutputImage >
 void
-itkIsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
-::GenerateData()
+IsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
+::ThreadedGenerateData(const OutputImageRegionType &region, ThreadIdType threadId)
 {
     //Test stability for the discrete time iteration. This definition is passed by the TimeStep variable.
     TimeStepTestStability();
@@ -38,8 +42,8 @@ itkIsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
     this->AllocateOutputs();
 
     //    Copy input image
-    IteratorType outputIt(output, output->GetRequestedRegion());
-    ConstIteratorType inputIt(input, input->GetRequestedRegion());
+    IteratorType outputIt(output, region);
+    ConstIteratorType inputIt(input, region);
 
     outputIt.GoToBegin();
     inputIt.GoToBegin();
@@ -51,10 +55,9 @@ itkIsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
 
     typedef itk::LaplacianOperator< OutputPixelType , OutputImageDimension > LaplacianOperatorType;
     LaplacianOperatorType laplaceOp;
-    itk::Size<OutputImageDimension> radius;
-    radius.Fill(1);
-    laplaceOp.CreateToRadius(radius);
-    NeighborIteratorType      laplaceIt(laplaceOp.GetRadius(), output,  output->GetRequestedRegion());
+    laplaceOp.SetRadius(InputImageDimension);
+    laplaceOp.CreateOperator();
+    NeighborIteratorType      laplaceIt(laplaceOp.GetRadius(), output,  region);
 
     laplaceIt.GetSize();
     double neighborAux = 0.0;
@@ -77,7 +80,7 @@ itkIsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
 }
 
 template< typename TInputImage, typename TOutputImage >
-void itkIsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
+void IsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
 ::TimeStepTestStability()
 {
     if ( m_TimeStep >  ( 1.0 / std::pow(2.0, static_cast< double >( InputImageDimension ) ) ))
@@ -90,7 +93,7 @@ void itkIsotropicAnomalousDiffusionImageFilter< TInputImage, TOutputImage >
 }
 
 template< typename TInputImage, typename TOutputImage >
-double itkIsotropicAnomalousDiffusionImageFilter<TInputImage, TOutputImage >
+double IsotropicAnomalousDiffusionImageFilter<TInputImage, TOutputImage >
 ::GeneralizedDiffCurve()
 {
 
@@ -108,6 +111,8 @@ double itkIsotropicAnomalousDiffusionImageFilter<TInputImage, TOutputImage >
 
     return d;
 }
+
+
 } // end namespace itk
 
 #endif
