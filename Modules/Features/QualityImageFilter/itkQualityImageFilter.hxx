@@ -68,52 +68,6 @@ itkQualityImageFilter< TImage >
     return answer_SNR;
 }
 
-//TODO: Rever calculo PSNR. Diferenca de valores muito alto. Calculo baseado no plugin do ImageJ SNR_ (http://bigwww.epfl.ch/sage/soft/snr/SNR_.java)
-template< typename TImage >
-double
-itkQualityImageFilter< TImage >
-::PSNR(){
-    typedef itk::ImageRegionConstIterator< TImage>          ConstInputIteratorType;
-    typename TImage::ConstPointer referenceImage = static_cast<const TImage*>(this->ProcessObject::GetInput(0));
-    typename TImage::ConstPointer compareImage = static_cast<const TImage*>(this->ProcessObject::GetInput(1));
-    typedef itk::StatisticsImageFilter<TImage> StatisticsImageFilterType;
-    typename  StatisticsImageFilterType::Pointer statisticsImageFilter = StatisticsImageFilterType::New ();
-    statisticsImageFilter->SetInput(referenceImage);
-    statisticsImageFilter->Update();
-
-
-    ConstInputIteratorType referenceImageIt(referenceImage, referenceImage->GetRequestedRegion());
-    ConstInputIteratorType compareImageIt(compareImage, compareImage->GetRequestedRegion());
-
-    double answer_PSNR = 0.0d;
-
-    int N = 1;
-    for (int dimN = 0; dimN < TImageDimension; ++dimN) {
-        N *= referenceImageIt.GetRegion().GetSize()[dimN];
-    }
-
-    double refPix = 0.0d;
-    double inPix = 0.0d;
-
-
-    double maxRefPix = static_cast<double>(statisticsImageFilter->GetMaximum());
-    referenceImageIt.GoToBegin();
-    compareImageIt.GoToBegin();
-
-    while (!referenceImageIt.IsAtEnd()) {
-        inPix = static_cast<double>(referenceImageIt.Get());
-        refPix = static_cast<double>(compareImageIt.Get());
-
-        if(refPix!=inPix && refPix!=0)
-            answer_PSNR += (10.0 * log10(pow(maxRefPix,2)/(pow(refPix - inPix, 2)/static_cast<double>(N))));
-
-        ++referenceImageIt;
-        ++compareImageIt;
-    }
-
-    return answer_PSNR;
-}
-
 template< typename TImage >
 double
 itkQualityImageFilter< TImage >
