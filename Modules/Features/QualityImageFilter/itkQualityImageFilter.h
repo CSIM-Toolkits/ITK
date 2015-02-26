@@ -35,7 +35,6 @@ public:
     void SetCompareImage(const TImage *compareImage);
 
     double SNR();
-    double PSNR();
     double RMSE();
     double MAE();
     double SSIM();
