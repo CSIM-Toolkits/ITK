@@ -3,6 +3,8 @@
 #include "itkImageToImageFilter.h"
 #include "itkImage.h"
 #include "itkNumericTraits.h"
+#include <itkConstNeighborhoodIterator.h>
+
 
 namespace itk
 {
@@ -30,6 +32,8 @@ public:
 
   typedef typename Superclass::OutputImageRegionType OutputImageRegionType;
 
+  typedef itk::ConstNeighborhoodIterator< OutputImageType >       NeighborIteratorType;
+
   /** Method for creation through the object factory. */
   itkNewMacro(Self)
 
@@ -38,7 +42,7 @@ public:
 
   typedef typename InputImageType::PixelType                 InputPixelType;
   typedef typename OutputImageType::PixelType                OutputPixelType;
-  typedef typename NumericTraits< InputPixelType >::RealType InputRealType;
+//  typedef typename NumericTraits< InputPixelType >::RealType InputRealType;
 
   itkSetMacro(Condutance, int)
   itkSetMacro(Iterations, int)
@@ -55,10 +59,10 @@ public:
                    ( Concept::HasNumericTraits< InputPixelType > ) );
   itkConceptMacro( SameDimensionCheck,
                    ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
-  itkConceptMacro( InputPixelTypeIsFloatingPointCheck,
-                   ( Concept::IsFloatingPoint< InputPixelType > ) );
-  itkConceptMacro( OutputPixelTypeIsFloatingPointCheck,
-                   ( Concept::IsFloatingPoint< OutputPixelType > ) );
+//  itkConceptMacro( InputPixelTypeIsFloatingPointCheck,
+//                   ( Concept::IsFloatingPoint< InputPixelType > ) );
+//  itkConceptMacro( OutputPixelTypeIsFloatingPointCheck,
+//                   ( Concept::IsFloatingPoint< OutputPixelType > ) );
   // End concept checking
 #endif
 
@@ -76,6 +80,8 @@ private:
   void TimeStepTestStability();
   double GeneralizedDiffCurve();
   double EdgeWeightedController(InputPixelType idxValue, InputPixelType centerValue);
+  double meanNeighbors(NeighborIteratorType neighbors);
+  InputPixelType up,down,left,right;
 };
 } // end namespace itk
 
