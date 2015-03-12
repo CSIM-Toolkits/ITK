@@ -59,10 +59,6 @@ public:
                    ( Concept::HasNumericTraits< InputPixelType > ) );
   itkConceptMacro( SameDimensionCheck,
                    ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
-//  itkConceptMacro( InputPixelTypeIsFloatingPointCheck,
-//                   ( Concept::IsFloatingPoint< InputPixelType > ) );
-//  itkConceptMacro( OutputPixelTypeIsFloatingPointCheck,
-//                   ( Concept::IsFloatingPoint< OutputPixelType > ) );
   // End concept checking
 #endif
 
