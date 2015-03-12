@@ -3,8 +3,9 @@
 #include "itkImageFileWriter.h"
 
 #include "IsotropicAnomalousDiffusionImageFilter.h"
+#include <itkCastImageFilter.h>
 
-int main(int, char*[])
+int main(int argc, char* argv[])
 {
     if ( argc < 5 )
         {
@@ -16,7 +17,7 @@ int main(int, char*[])
           return -1;
         }
 
-    const unsigned int Dimension = 2;
+    const unsigned int Dimension = 3;
 
     typedef unsigned char                       PixelType;
     typedef unsigned char                       PixelOutType;
