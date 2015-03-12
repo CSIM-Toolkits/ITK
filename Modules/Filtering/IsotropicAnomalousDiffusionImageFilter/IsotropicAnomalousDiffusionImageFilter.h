@@ -36,7 +36,6 @@ public:
 
   typedef typename InputImageType::PixelType                 InputPixelType;
   typedef typename OutputImageType::PixelType                OutputPixelType;
-//  typedef typename NumericTraits< InputPixelType >::RealType InputRealType;
 
   typedef typename Superclass::OutputImageRegionType OutputImageRegionType;
 
@@ -55,8 +54,6 @@ public:
                    ( Concept::HasNumericTraits< InputPixelType > ) );
   itkConceptMacro( SameDimensionCheck,
                    ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
-
-
 #endif
 
 protected:
@@ -66,7 +63,6 @@ protected:
     int m_Iterations;
     double m_TimeStep;
     double m_Q;
-//  void GenerateData();
     virtual void ThreadedGenerateData(const OutputImageRegionType &, ThreadIdType);
 
 private:
