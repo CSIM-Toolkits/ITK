@@ -8,7 +8,7 @@ namespace itk
 {
 
 template< typename TImage >
-class ITK_EXPORT itkQualityImageFilter:
+class ITK_EXPORT QualityImageFilter:
         public ImageToImageFilter< TImage, TImage >
 {
 public:
@@ -17,7 +17,7 @@ public:
                         TImage::ImageDimension);
 
     /** Standard class typedefs. */
-    typedef itkQualityImageFilter                                 Self;
+    typedef QualityImageFilter                                 Self;
     typedef ImageToImageFilter< TImage, TImage >                  Superclass;
     typedef SmartPointer< Self >                                  Pointer;
     typedef SmartPointer< const Self >                            ConstPointer;
@@ -26,7 +26,7 @@ public:
     itkNewMacro(Self)
 
     /** Run-time type information (and related methods). */
-    itkTypeMacro(itkQualityImageFilter, ImageToImageFilter)
+    itkTypeMacro(QualityImageFilter, ImageToImageFilter)
 
     /** Set the Reference image. */
     void SetReferenceImage(const TImage *refImage);
@@ -39,26 +39,13 @@ public:
     double MAE();
     double SSIM();
 
-    //#ifdef ITK_USE_CONCEPT_CHECKING
-    // Begin concept checking
-    //  itkConceptMacro( InputHasNumericTraitsCheck,
-    //                   ( Concept::HasNumericTraits< InputPixelType > ) );
-    //  itkConceptMacro( SameDimensionCheck,
-    //                   ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
-    //  itkConceptMacro( InputPixelTypeIsFloatingPointCheck,
-    //                   ( Concept::IsFloatingPoint< InputPixelType > ) );
-    //  itkConceptMacro( OutputPixelTypeIsFloatingPointCheck,
-    //                   ( Concept::IsFloatingPoint< OutputPixelType > ) );
-    // End concept checking
-    //#endif
-
 protected:
-    itkQualityImageFilter();
-    virtual ~itkQualityImageFilter() {}
+    QualityImageFilter();
+    virtual ~QualityImageFilter() {}
     void GenerateData();
 
 private:
-    itkQualityImageFilter(const Self &); //purposely not implemented
+    QualityImageFilter(const Self &); //purposely not implemented
     void operator=(const Self &);  //purposely not implemented
     double stdCorrelation();
 };
