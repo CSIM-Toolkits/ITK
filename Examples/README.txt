@@ -1,3 +1,3 @@
 Example Folder
 
-Some simple application examples for each Module implemented in CSIMToolkit package.
+Some simple application examples for each Module implemented in CSIM-Toolkit package.

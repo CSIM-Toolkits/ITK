@@ -2,21 +2,22 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
-#include "IsotropicAnomalousDiffusionImageFilter.h"
+#include "itkIsotropicAnomalousDiffusionImageFilter.h"
+#include "itkCastImageFilter.h"
 
-int main(int, char*[])
+int main(int argc, char* argv[])
 {
-    if ( argc < 5 )
+ if ( argc < 5 )
         {
           std::cerr << "Missing parameters. " << std::endl;
           std::cerr << "Usage: " << std::endl;
           std::cerr << argv[0]
-                    << " inputImageFile outputImageFile GeneralizedDiffusion Qvalue NumberOfIteration TimeStep"
+                    << " inputImageFile outputImageFile GeneralizedDiffusionCoefficient Qvalue NumberOfIteration TimeStep"
                     << std::endl;
           return -1;
         }
 
-    const unsigned int Dimension = 2;
+    const unsigned int Dimension = 3;
 
     typedef unsigned char                       PixelType;
     typedef unsigned char                       PixelOutType;
@@ -26,7 +27,7 @@ int main(int, char*[])
     typedef itk::Image<CastPixelType, Dimension> CastImageType;
 
     typedef itk::ImageFileReader<ImageType> ReaderType;
-    typedef itk::ImageFileWriter<CastImageType> WriterType;
+    typedef itk::ImageFileWriter<ImageOutType> WriterType;
 
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(argv[1]);
@@ -64,7 +65,7 @@ int main(int, char*[])
 
       WriterType::Pointer writer = WriterType::New();
       writer->SetFileName(argv[2]);
-      writer->SetInput( filter->GetOutput() );
+      writer->SetInput( castBack->GetOutput() );
 
 
       try

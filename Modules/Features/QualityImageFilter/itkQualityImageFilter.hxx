@@ -10,22 +10,22 @@
 namespace itk
 {
 template< typename TImage >
-itkQualityImageFilter< TImage >
-::itkQualityImageFilter()
+QualityImageFilter< TImage >
+::QualityImageFilter()
 {
     this->SetNumberOfRequiredInputs(2);
 }
 
 template< typename TImage >
 void
-itkQualityImageFilter< TImage >
+QualityImageFilter< TImage >
 ::SetReferenceImage(const TImage *reference){
     this->SetNthInput(0, const_cast<TImage*>(reference));
 }
 
 template< typename TImage >
 void
-itkQualityImageFilter< TImage >
+QualityImageFilter< TImage >
 ::SetCompareImage(const TImage *compared){
     this->SetNthInput(1, const_cast<TImage*>(compared));
 }
@@ -33,7 +33,7 @@ itkQualityImageFilter< TImage >
 
 template< typename TImage >
 double
-itkQualityImageFilter< TImage >
+QualityImageFilter< TImage >
 ::SNR(){
     typedef itk::ImageRegionConstIterator< TImage>          ConstInputIteratorType;
     typename TImage::ConstPointer referenceImage = static_cast<const TImage*>(this->ProcessObject::GetInput(0));
@@ -70,7 +70,7 @@ itkQualityImageFilter< TImage >
 
 template< typename TImage >
 double
-itkQualityImageFilter< TImage >
+QualityImageFilter< TImage >
 ::RMSE(){
     typedef itk::ImageRegionConstIterator< TImage>          ConstInputIteratorType;
     typename TImage::ConstPointer referenceImage = static_cast<const TImage*>(this->ProcessObject::GetInput(0));
@@ -107,7 +107,7 @@ itkQualityImageFilter< TImage >
 
 template< typename TImage >
 double
-itkQualityImageFilter< TImage >
+QualityImageFilter< TImage >
 ::MAE(){
     typedef itk::ImageRegionConstIterator< TImage>          ConstInputIteratorType;
     typename TImage::ConstPointer referenceImage = static_cast<const TImage*>(this->ProcessObject::GetInput(0));
@@ -144,7 +144,7 @@ itkQualityImageFilter< TImage >
 
 template< typename TImage >
 double
-itkQualityImageFilter< TImage >
+QualityImageFilter< TImage >
 ::SSIM()
 {
     typedef itk::ImageRegionConstIterator< TImage>          ConstInputIteratorType;
@@ -195,7 +195,7 @@ itkQualityImageFilter< TImage >
 
 template< typename TImage >
 void
-itkQualityImageFilter< TImage >
+QualityImageFilter< TImage >
 ::GenerateData()
 {
 
@@ -203,7 +203,7 @@ itkQualityImageFilter< TImage >
 
 template<typename TImage>
 double
-itkQualityImageFilter<TImage>
+QualityImageFilter<TImage>
 ::stdCorrelation() {
     typename TImage::ConstPointer img1 = static_cast<const TImage*>(this->ProcessObject::GetInput(0));
     typename TImage::ConstPointer img2 = static_cast<const TImage*>(this->ProcessObject::GetInput(1));

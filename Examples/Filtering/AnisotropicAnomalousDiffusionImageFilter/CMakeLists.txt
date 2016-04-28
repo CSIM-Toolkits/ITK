@@ -19,8 +19,8 @@ IF(ITK_FOUND)
 
 add_executable(AnisotropicAnomalousDiffusionImageFilter
 Main.cpp
-AnisotropicAnomalousDiffusionImageFilter.h
-AnisotropicAnomalousDiffusionImageFilter.hxx
+itkAnisotropicAnomalousDiffusionImageFilter.h
+itkAnisotropicAnomalousDiffusionImageFilter.hxx
 )
 
 

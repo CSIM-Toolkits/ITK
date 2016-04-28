@@ -6,7 +6,7 @@ endif()
 
 
 # This project is designed to be built outside the Insight source tree.
-project(IsotropicAnomalousDiffusionImageFilter)
+project(QualityImageFilter)
 
 # Find ITK.
 find_package(ITK REQUIRED)
@@ -17,11 +17,11 @@ IF(ITK_FOUND)
             "Cannot build InsightApplications without ITK.  Please set ITK_DIR.")
   ENDIF(ITK_FOUND)
 
-add_executable(IsotropicAnomalousDiffusionImageFilter
+add_executable(QualityImageFilter
 Main.cpp
-itkIsotropicAnomalousDiffusionImageFilter.h
-itkIsotropicAnomalousDiffusionImageFilter.hxx
+itkQualityImageFilter.h
+itkQualityImageFilter.hxx
 )
 
 
-target_link_libraries(IsotropicAnomalousDiffusionImageFilter ${ITK_LIBRARIES} )
+target_link_libraries(QualityImageFilter ${ITK_LIBRARIES} )
