@@ -1,9 +1,7 @@
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-
 #include "itkAnisotropicAnomalousDiffusionImageFilter.h"
-#include "itkCastImageFilter.h"
 
 int main(int argc, char* argv[])
 {
@@ -19,15 +17,12 @@ int main(int argc, char* argv[])
 
     const unsigned int Dimension = 3;
 
-    typedef unsigned char                       PixelType;
-    typedef unsigned char                       PixelOutType;
+    typedef float                       PixelType;
+    typedef float                       PixelOutType;
     typedef itk::Image<PixelType, Dimension>    ImageType;
-    typedef itk::Image<PixelOutType, Dimension> ImageOutType;
-    typedef float                               CastPixelType;
-    typedef itk::Image<CastPixelType, Dimension> CastImageType;
 
     typedef itk::ImageFileReader<ImageType> ReaderType;
-    typedef itk::ImageFileWriter<ImageOutType> WriterType;
+    typedef itk::ImageFileWriter<ImageType> WriterType;
 
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(argv[1]);
@@ -42,30 +37,21 @@ int main(int argc, char* argv[])
         return -1;
         }
 
-    typedef itk::CastImageFilter<ImageType, CastImageType> CastType;
-    typename CastType::Pointer cast = CastType::New();
-    cast->SetInput(reader->GetOutput());
-    cast->Update();
 
-    typedef itk::AnisotropicAnomalousDiffusionImageFilter<CastImageType, CastImageType> FilterType;
+    typedef itk::AnisotropicAnomalousDiffusionImageFilter<ImageType, ImageType> FilterType;
     FilterType::Pointer filter = FilterType::New();
 
-    filter->SetInput(cast->GetOutput());
+    filter->SetInput(reader->GetOutput());
     filter->SetCondutance(std::atof(argv[3]));
     filter->SetQ(std::atof(argv[4]));
     filter->SetIterations(std::atoi(argv[5]));
     filter->SetTimeStep(std::atof(argv[6]));
     filter->Update();
 
-    typedef itk::CastImageFilter<CastImageType, ImageOutType> CastBackType;
-    typename CastBackType::Pointer castBack = CastBackType::New();
-    castBack->SetInput(filter->GetOutput());
-    castBack->Update();
-
 
       WriterType::Pointer writer = WriterType::New();
       writer->SetFileName(argv[2]);
-      writer->SetInput( castBack->GetOutput() );
+      writer->SetInput( filter->GetOutput() );
 
 
       try
@@ -81,3 +67,4 @@ int main(int argc, char* argv[])
 
   return EXIT_SUCCESS;
 }
+
