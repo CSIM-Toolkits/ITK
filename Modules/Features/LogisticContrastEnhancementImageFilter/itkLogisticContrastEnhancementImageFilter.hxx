@@ -10,7 +10,7 @@
 #include <itkRenyiEntropyThresholdImageFilter.h>
 #include <itkMomentsThresholdImageFilter.h>
 #include <itkYenThresholdImageFilter.h>
-
+#include <itkIntermodesThresholdImageFilter.h>
 
 #include <itkImageRegionConstIterator.h>
 #include <itkImageRegionIterator.h>
@@ -59,6 +59,7 @@ LogisticContrastEnhancementImageFilter< TInput, TOutput >
     typedef itk::IsoDataThresholdImageFilter<InputImageType, InputImageType>  IsoDataThresholdType;
     typedef itk::MomentsThresholdImageFilter<InputImageType, InputImageType>  MomentsThresholdType;
     typedef itk::YenThresholdImageFilter<InputImageType, InputImageType>  YenThresholdType;
+    typedef itk::IntermodesThresholdImageFilter<InputImageType, InputImageType>  IntermodesThresholdType;
 
     typename MaxEntropyThresholdType::Pointer maxEnThreshold = MaxEntropyThresholdType::New();
     typename OstuThresholdType::Pointer otsuThreshold = OstuThresholdType::New();
@@ -67,6 +68,7 @@ LogisticContrastEnhancementImageFilter< TInput, TOutput >
     typename IsoDataThresholdType::Pointer isoDataThreshold = IsoDataThresholdType::New();
     typename MomentsThresholdType::Pointer momentsThreshold = MomentsThresholdType::New();
     typename YenThresholdType::Pointer yenThreshold = YenThresholdType::New();
+    typename IntermodesThresholdType::Pointer intermodesThreshold = IntermodesThresholdType::New();
 
     double thr=0.0;
     switch (m_ThresholdMethod) {
@@ -117,6 +119,14 @@ LogisticContrastEnhancementImageFilter< TInput, TOutput >
         yenThreshold->SetNumberOfHistogramBins(m_NumberOfBins);
         yenThreshold->Update();
         thr=yenThreshold->GetThreshold();
+        break;
+    case INTERMODES:
+        intermodesThreshold->SetInput(input);
+        intermodesThreshold->SetInsideValue(0);
+        intermodesThreshold->SetOutsideValue(1);
+        intermodesThreshold->SetNumberOfHistogramBins(m_NumberOfBins);
+        intermodesThreshold->Update();
+        thr=intermodesThreshold->GetThreshold();
         break;
     default:
         std::cout<<"ERROR: The threshold method is not valid! Choose the options available in the ThresholdMethod enumeration."<<std::endl;

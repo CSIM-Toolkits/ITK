@@ -85,7 +85,8 @@ public:
         RENYI=3,
         MOMENTS=4,
         YEN=5,
-        ISODATA=6
+        ISODATA=6,
+        INTERMODES=7,
     };
 
 protected:
