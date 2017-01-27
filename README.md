@@ -9,13 +9,14 @@ For more details about ITK, see to [website](https://itk.org/).
 Each method implemented here are organized in different categories, following the ITK style. 
 
 ### Module: Filtering
-  * Anomalous Diffusion Filters
+  * Anisotropic Anomalous Diffusion (AAD)
+  * Isotropic Anomalous Diffusion (IAD)
   
 ### Module: Features
-
   * Sample Entropy 2D
   * Logist Contrast Enhancement
   * Image Quality Metrics
+  * Diffusion Edge Optimization
   
 ### Module: Segmentation
   * Generalized Entropy Threshold 
