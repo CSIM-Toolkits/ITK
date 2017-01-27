@@ -17,7 +17,6 @@
 #define itkDiffusionEdgeOptimizationImageCalculator_hxx
 
 #include "itkDiffusionEdgeOptimizationImageCalculator.h"
-#include "itkImageRegionConstIteratorWithIndex.h"
 #include "itkNumericTraits.h"
 
 //Canny noise estimator
@@ -117,7 +116,7 @@ DiffusionEdgeOptimizationImageCalculator< TInputImage >
 
     typename ImageToHistogramFilterType::HistogramType* histogramG = gradToHist->GetOutput();
 
-    double cumulativeSum = 0.0, total = 0.0, percentage;
+    double cumulativeSum = 0.0, total = 0.0, percentage = 0.0;
     for (int idx = 0; idx < histogramG->GetSize()[0]; ++idx) {
         total+=histogramG->GetFrequency(idx);
     }

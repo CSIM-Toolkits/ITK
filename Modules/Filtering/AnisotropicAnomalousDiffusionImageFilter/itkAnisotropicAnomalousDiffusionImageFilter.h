@@ -44,14 +44,14 @@ public:
   typedef typename OutputImageType::PixelType                OutputPixelType;
 //  typedef typename NumericTraits< InputPixelType >::RealType InputRealType;
 
-  itkSetMacro(Condutance, int)
+  itkSetMacro(Conductance, float)
   itkSetMacro(Iterations, int)
-  itkSetMacro(TimeStep, double)
-  itkSetMacro(Q, double)
-  itkGetMacro(Condutance, int)
+  itkSetMacro(TimeStep, float)
+  itkSetMacro(Q, float)
+  itkGetMacro(Conductance, float)
   itkGetMacro(Iterations, int)
-  itkGetMacro(TimeStep, double)
-  itkGetMacro(Q, double)
+  itkGetMacro(TimeStep, float)
+  itkGetMacro(Q, float)
 
 #ifdef ITK_USE_CONCEPT_CHECKING
   // Begin concept checking
@@ -59,15 +59,18 @@ public:
                    ( Concept::HasNumericTraits< InputPixelType > ) );
   itkConceptMacro( SameDimensionCheck,
                    ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
+  itkConceptMacro( InputPixelTypeIsFloatingPointCheck,
+                   ( Concept::IsFloatingPoint< InputPixelType > ) );
+//  itkConceptMacro( OutputPixelTypeIsFloatingPointCheck,
+//                   ( Concept::IsFloatingPoint< OutputPixelType > ) );
   // End concept checking
 #endif
 
 protected:
   AnisotropicAnomalousDiffusionImageFilter();
   virtual ~AnisotropicAnomalousDiffusionImageFilter() {}
-    double m_GeneralizedDiffusion, m_TimeStep, m_Q;
-    int m_Iterations, m_Condutance;
-//  void GenerateData();
+    float m_GeneralizedDiffusion, m_TimeStep, m_Q, m_Conductance;
+    int m_Iterations;
   virtual void ThreadedGenerateData(const OutputImageRegionType &, ThreadIdType);
 
 private:
