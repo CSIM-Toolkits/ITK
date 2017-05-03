@@ -6,7 +6,7 @@ endif()
 
 
 # This project is designed to be built outside the Insight source tree.
-project(DiffusionEdgeOptimizationImageCalculator)
+project(AutomaticConductanceImageCalculator)
 
 # Find ITK.
 find_package(ITK REQUIRED)
@@ -17,11 +17,11 @@ IF(ITK_FOUND)
             "Cannot build InsightApplications without ITK.  Please set ITK_DIR.")
   ENDIF(ITK_FOUND)
 
-add_executable(DiffusionEdgeOptimizationImageCalculator
+add_executable(AutomaticConductanceImageCalculator
 Main.cpp
-itkDiffusionEdgeOptimizationImageCalculator.h
-itkDiffusionEdgeOptimizationImageCalculator.hxx
+itkAutomaticConductanceImageCalculator.h
+itkAutomaticConductanceImageCalculator.hxx
 )
 
 
-target_link_libraries(DiffusionEdgeOptimizationImageCalculator ${ITK_LIBRARIES} )
+target_link_libraries(AutomaticConductanceImageCalculator ${ITK_LIBRARIES} )

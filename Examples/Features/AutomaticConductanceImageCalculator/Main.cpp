@@ -2,7 +2,7 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
-#include "itkDiffusionEdgeOptimizationImageCalculator.h"
+#include "itkAutomaticConductanceImageCalculator.h"
 
 int main(int argc, char* argv[])
 {
@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
         std::cerr << "Missing parameters. " << std::endl;
         std::cerr << "Usage: " << std::endl;
         std::cerr << argv[0]
-                << " inputImageFileName optimizationFunction (1,2,3)"
+                << " inputImageFileName optimizationFunction(1,2,3)"
                 << std::endl;
         return -1;
     }
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    typedef itk::DiffusionEdgeOptimizationImageCalculator<InputImageType>  CalculatorType;
+    typedef itk::AutomaticConductanceImageCalculator<InputImageType>  CalculatorType;
     CalculatorType::Pointer calculator = CalculatorType::New();
     calculator->SetImage(reader->GetOutput());
     int optFunction = atoi(argv[2]);

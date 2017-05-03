@@ -13,10 +13,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-#ifndef itkDiffusionEdgeOptimizationImageCalculator_hxx
-#define itkDiffusionEdgeOptimizationImageCalculator_hxx
+#ifndef itkAutomaticConductanceImageCalculator_hxx
+#define itkAutomaticConductanceImageCalculator_hxx
 
-#include "itkDiffusionEdgeOptimizationImageCalculator.h"
+#include "itkAutomaticConductanceImageCalculator.h"
 #include "itkNumericTraits.h"
 
 //Canny noise estimator
@@ -40,8 +40,8 @@ namespace itk
  * Constructor
  */
 template< typename TInputImage >
-DiffusionEdgeOptimizationImageCalculator< TInputImage >
-::DiffusionEdgeOptimizationImageCalculator()
+AutomaticConductanceImageCalculator< TInputImage >
+::AutomaticConductanceImageCalculator()
 {
     m_Image = TInputImage::New();
     m_Kappa = static_cast<PixelType>(1);
@@ -54,7 +54,7 @@ DiffusionEdgeOptimizationImageCalculator< TInputImage >
  */
 template< typename TInputImage >
 void
-DiffusionEdgeOptimizationImageCalculator< TInputImage >
+AutomaticConductanceImageCalculator< TInputImage >
 ::Compute(void)
 {
     if ( !m_RegionSetByUser )
@@ -79,7 +79,7 @@ DiffusionEdgeOptimizationImageCalculator< TInputImage >
 
 template< typename TInputImage >
 void
-DiffusionEdgeOptimizationImageCalculator< TInputImage >
+AutomaticConductanceImageCalculator< TInputImage >
 ::ComputeCanny(ImageConstPointer image)
 {
     //Gradient magnitude
@@ -133,7 +133,7 @@ DiffusionEdgeOptimizationImageCalculator< TInputImage >
 
 template< typename TInputImage >
 void
-DiffusionEdgeOptimizationImageCalculator< TInputImage >
+AutomaticConductanceImageCalculator< TInputImage >
 ::ComputeMAD(ImageConstPointer image)
 {
     // K = 1.4826 median( |gradI - median(gradI)| )
@@ -172,7 +172,7 @@ DiffusionEdgeOptimizationImageCalculator< TInputImage >
 
 template< typename TInputImage >
 void
-DiffusionEdgeOptimizationImageCalculator< TInputImage >
+AutomaticConductanceImageCalculator< TInputImage >
 ::ComputeMorphological(ImageConstPointer image)
 {
     // K = average(opening(I,s)) - average(closing(I,s))
@@ -212,7 +212,7 @@ DiffusionEdgeOptimizationImageCalculator< TInputImage >
 
 template< typename TInputImage >
 void
-DiffusionEdgeOptimizationImageCalculator< TInputImage >
+AutomaticConductanceImageCalculator< TInputImage >
 ::SetRegion(const RegionType & region)
 {
     m_Region = region;
@@ -221,7 +221,7 @@ DiffusionEdgeOptimizationImageCalculator< TInputImage >
 
 template< typename TInputImage >
 void
-DiffusionEdgeOptimizationImageCalculator< TInputImage >
+AutomaticConductanceImageCalculator< TInputImage >
 ::PrintSelf(std::ostream & os, Indent indent) const
 {
     Superclass::PrintSelf(os, indent);

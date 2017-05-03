@@ -13,15 +13,15 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-#ifndef itkDiffusionEdgeOptimizationImageCalculator_h
-#define itkDiffusionEdgeOptimizationImageCalculator_h
+#ifndef itkAutomaticConductanceImageCalculator_h
+#define itkAutomaticConductanceImageCalculator_h
 
 #include "itkObject.h"
 #include "itkObjectFactory.h"
 
 namespace itk
 {
-/** \class DiffusionEdgeOptimizationImageCalculator
+/** \class AutomaticConductanceImageCalculator
  *  \brief Computes the conductance parameter based on flux functions
  * for anisotropic diffusion filtering process.
  *
@@ -41,7 +41,7 @@ namespace itk
  * determined conductance is estimated.
  */
 template< typename TInputImage >
-class DiffusionEdgeOptimizationImageCalculator:public Object
+class AutomaticConductanceImageCalculator:public Object
 {
 public:
     /** Extract dimension from input and output image. */
@@ -49,7 +49,7 @@ public:
                         TInputImage::ImageDimension);
 
     /** Standard class typedefs. */
-    typedef DiffusionEdgeOptimizationImageCalculator Self;
+    typedef AutomaticConductanceImageCalculator Self;
     typedef Object                        Superclass;
     typedef SmartPointer< Self >          Pointer;
     typedef SmartPointer< const Self >    ConstPointer;
@@ -58,7 +58,7 @@ public:
     itkNewMacro(Self);
 
     /** Run-time type information (and related methods). */
-    itkTypeMacro(DiffusionEdgeOptimizationImageCalculator, Object);
+    itkTypeMacro(AutomaticConductanceImageCalculator, Object);
 
     /** Type definition for the input image. */
     typedef TInputImage ImageType;
@@ -103,12 +103,12 @@ public:
     };
 
 protected:
-    DiffusionEdgeOptimizationImageCalculator();
-    virtual ~DiffusionEdgeOptimizationImageCalculator() {}
+    AutomaticConductanceImageCalculator();
+    virtual ~AutomaticConductanceImageCalculator() {}
     virtual void PrintSelf(std::ostream & os, Indent indent) const ITK_OVERRIDE;
 
 private:
-    DiffusionEdgeOptimizationImageCalculator(const Self &) ITK_DELETE_FUNCTION;
+    AutomaticConductanceImageCalculator(const Self &) ITK_DELETE_FUNCTION;
     void operator=(const Self &) ITK_DELETE_FUNCTION;
 
     void ComputeCanny(ImageConstPointer image);
@@ -125,7 +125,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDiffusionEdgeOptimizationImageCalculator.hxx"
+#include "itkAutomaticConductanceImageCalculator.hxx"
 #endif
 
-#endif /* itkDiffusionEdgeOptimizationImageCalculator_h */
+#endif /* itkAutomaticConductanceImageCalculator_h */
