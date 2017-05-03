@@ -16,7 +16,7 @@ Each method implemented here are organized in different categories, following th
   * Sample Entropy 2D
   * Logist Contrast Enhancement
   * Image Quality Metrics
-  * Diffusion Edge Optimization
+  * Automatic Conductance Image Calculator
   
 ### Module: Segmentation
   * Generalized Entropy Threshold 
@@ -42,6 +42,10 @@ All methods are under the ITK license. However, if you use any of this methods i
 ## Sample Entropy 2D
 
 [Two-dimensional sample entropy: assessing image texture through irregularity, Biomedical Physics & Engineering Express, 2016](http://doi.org/10.1088/2057-1976/2/4/045002)
+
+## Automatic Conductance Image Calculator
+
+[Automatic Conductance Estimation Methods for Anisotropic Diffusion ITK Filters, Insight-Journal, 2017](http://insight-journal.org/browse/publication/980)
 
 
 # Contact
