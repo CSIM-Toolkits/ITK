@@ -45,7 +45,7 @@ All methods are under the ITK license. However, if you use any of this methods i
 
 ## Automatic Conductance Image Calculator
 
-[Automatic Conductance Estimation Methods for Anisotropic Diffusion ITK Filters, Insight-Journal, 2017](http://insight-journal.org/browse/publication/980)
+[Automatic Conductance Estimation Methods for Anisotropic Diffusion ITK Filters, Insight-Journal, 2017](http://insight-journal.org/browse/publication/983)
 
 
 # Contact
