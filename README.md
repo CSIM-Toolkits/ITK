@@ -13,6 +13,7 @@ Each method implemented here are organized in different categories, following th
   * Isotropic Anomalous Diffusion (IAD)
   
 ### Module: Features
+  * Diffusion Entropy Mapping
   * Sample Entropy 2D
   * Logist Contrast Enhancement
   * Image Quality Metrics
