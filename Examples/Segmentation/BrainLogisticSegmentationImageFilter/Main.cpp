@@ -43,12 +43,32 @@ int main(int argc, char* argv[])
     FilterType::Pointer filter = FilterType::New();
     filter->SetInput(reader->GetOutput());
     filter->SetNumberOfTissues(atoi(argv[3]));
-//    filter->UseManualNumberOfBinsOn();
-//    filter->SetNumberOfBins(56);
-//    filter->ManualToleranceOn();
-//    filter->SetTolerance(1);
     filter->DebugModeOn();
     filter->Update();
+
+    cout<<"Histogram Peaks: [ ";
+    for (int i = 0; i < filter->GetHistogramPeaks().size(); ++i) {
+        cout<<filter->GetHistogramPeaks()[i]<<" ";
+    }
+    cout<<" ]"<<endl;
+
+    cout<<"Histogram Valleys: [ ";
+    for (int i = 0; i < filter->GetHistogramValleys().size(); ++i) {
+        cout<<filter->GetHistogramValleys()[i]<<" ";
+    }
+    cout<<" ]"<<endl;
+
+    cout<<"Betas: [ ";
+    for (int i = 0; i < filter->GetBetas().size(); ++i) {
+        cout<<filter->GetBetas()[i]<<" ";
+    }
+    cout<<" ]"<<endl;
+
+    cout<<"Alphas: [ ";
+    for (int i = 0; i < filter->GetAlphas().size(); ++i) {
+        cout<<filter->GetAlphas()[i]<<" ";
+    }
+    cout<<" ]"<<endl;
 
     typename WriterType::Pointer writer = WriterType::New();
     writer->SetFileName(argv[2]);

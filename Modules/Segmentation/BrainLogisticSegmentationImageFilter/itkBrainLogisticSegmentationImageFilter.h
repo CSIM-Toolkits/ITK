@@ -84,6 +84,7 @@ public:
     itkSetMacro(DebugMode, bool)
     itkBooleanMacro(DebugMode)
 
+
     /** Get if use manual tolerance. */
     itkGetMacro(ManualTolerance, bool)
 
@@ -102,6 +103,22 @@ public:
     /** Get the Tolerance. */
     itkGetMacro(Tolerance, char)
 
+    /** Get the vector of peaks found in the histogram analysis. */
+    itkGetMacro(HistogramPeaks, std::vector<double>)
+
+    /** Get the vector of valleys found in the histogram analysis. */
+    itkGetMacro(HistogramValleys, std::vector<double>)
+
+    /** Get the vector of alpha values estimated in each part of the histogram.
+    The counter follows the same orientation that is given in the HistogramPeaks and HistogramValleys,
+    i.e. from the higher to the lower values of the histogram.*/
+    itkGetMacro(Alphas, std::vector<double>)
+
+    /** Get the vector of beta values estimated in each part of the histogram.
+    The counter follows the same orientation that is given in the HistogramPeaks and HistogramValleys,
+    i.e. from the higher to the lower values of the histogram.*/
+    itkGetMacro(Betas, std::vector<double>)
+
 #ifdef ITK_USE_CONCEPT_CHECKING
     // Begin concept checking
     itkConceptMacro( InputHasNumericTraitsCheck,
@@ -117,6 +134,7 @@ protected:
     virtual ~BrainLogisticSegmentationImageFilter() {}
     bool m_ManualTolerance, m_DebugMode, m_UseManualNumberOfBins;
     char m_Tolerance;
+    std::vector<double> m_HistogramPeaks, m_HistogramValleys, m_Alphas, m_Betas;
     unsigned int m_NumberOfBins, m_NumberOfTissues; //TODO Fazer o GetSet do m_NumberOfTissues
 
     virtual void GenerateOutputInformation(void) ITK_OVERRIDE;

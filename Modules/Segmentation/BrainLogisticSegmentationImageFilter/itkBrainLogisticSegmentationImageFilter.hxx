@@ -60,7 +60,7 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
     output->Allocate();
 
     //Mounting input histogram
-    //Step 1: Removing zeros
+    //Step 1: Getting input data
     InputPixelType min_input=NumericTraits<InputPixelType>::max(),max_input=NumericTraits<InputPixelType>::min();
     typedef itk::ImageRegionConstIterator<InputImageType> ConstRegionIterator;
     ConstRegionIterator inputIt(input, input->GetRequestedRegion());
@@ -77,8 +77,7 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
         ++inputIt;
     }
 
-    //Mounting input histogram
-    //Step 1: Removing zeros
+    //Step 2: Removing zeros
     inputIt.GoToBegin();
     std::vector<InputPixelType> data;
     while (!inputIt.IsAtEnd()) {
@@ -88,7 +87,7 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
         ++inputIt;
     }
 
-    //Step 2:Finding minimum and maximum of the input image
+    //Step 3:Finding minimum and maximum of the input image
     InputPixelType min=NumericTraits<InputPixelType>::max(),max=NumericTraits<InputPixelType>::min();
     for (int i = 0; i < data.size(); ++i) {
         if (data[i]<min) {
@@ -102,7 +101,7 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
         cout<<"Input (min,max) values considered in the histogram: ("<<min<<","<<max<<")"<<endl;
     }
 
-    //Step 3:Defining the number of bins from input values range
+    //Step 4:Defining the number of bins from input values range
     if (!m_UseManualNumberOfBins) {
         m_NumberOfBins=(int)sqrt(max-min); //Using the rule of squares.
     }
@@ -116,7 +115,6 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
     typename HistogramType::Pointer histogram = HistogramType::New();
     typename HistogramType::SizeType size(1);
 
-    //Step 4:Setting the number of bins depending on a bin function.
     unsigned int binsPerDimension = m_NumberOfBins;
     size.Fill(binsPerDimension);
 
@@ -142,7 +140,7 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
     }
 
 
-    //Step 6:Removing outliers in the input data. Procesure similar to what is done in FSL-BET brain extraction.
+    //Step 6: Removing outliers in the input data. Procesure similar to what is done in FSL-BET brain extraction.
     vector<int> freq;
     for (int p = 0; p < histogram->Size(); ++p) {
         freq.push_back(histogram->GetFrequency(p));
@@ -161,7 +159,6 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
 
     for (int i = 0; i < cdf.size(); ++i) {
         //Correcting data set to remove CDF lower than 2% and higher than 98%.
-
         if (cdf[i]<0.02 || cdf[i]>0.99) {
             index(0)=i;
             histogram->SetFrequencyOfIndex(index, 0);
@@ -216,10 +213,12 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
 
         //Getting the peaks from the histogram
         for (int n = 0; n < max_index.size(); ++n) {
-            peaks[n]=histogram->GetBinMax(0,max_index[n]);
+            peaks[n]=histogram->GetBinMax(0,max_index[n]);            
+            m_HistogramPeaks.push_back(static_cast<double>(histogram->GetBinMax(0,max_index[n])));
         }
         for (int n = 0; n < min_index.size(); ++n) {
             valleys[n]=histogram->GetBinMax(0,min_index[n]);
+            m_HistogramValleys.push_back(static_cast<double>(histogram->GetBinMax(0,min_index[n])));
         }
 
 
@@ -271,11 +270,14 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
          */
         if (n==0) {
             beta = valleys[n];
+            m_Betas.push_back(beta);
             //Adjusting automatic tolerance
             if (m_ManualTolerance) {
                 alpha=((-1)*(peaks[n+1])+beta)/(log((100.0-static_cast<double>(m_Tolerance))/static_cast<double>(m_Tolerance)));
+                m_Alphas.push_back(static_cast<double>(alpha));
             }else{
                 alpha=((-1)*(peaks[n+1])+beta)/(log(0.99/(1.0-0.99)));
+                m_Alphas.push_back(static_cast<double>(alpha));
             }
 
             //Apply logistic curve in the n-th tissue
@@ -299,11 +301,14 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
             }
         }else if (n==m_NumberOfTissues - 1) {
             beta = valleys[n-1];
+            m_Betas.push_back(beta);
             //Adjusting automatic tolerance
             if (m_ManualTolerance) {
                 alpha=((-1)*(peaks[n-1])+beta)/(log((100.0-static_cast<double>(m_Tolerance))/static_cast<double>(m_Tolerance)));
+                m_Alphas.push_back(static_cast<double>(alpha));
             }else{
                 alpha=((-1)*(peaks[n-1])+beta)/(log(0.99/(1.0-0.99)));
+                m_Alphas.push_back(static_cast<double>(alpha));
             }
 
             //Apply logistic curve in the n-th tissue
@@ -332,11 +337,14 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
             }
         }else{
             beta = valleys[n];
+            m_Betas.push_back(beta);
             //Adjusting automatic tolerance
             if (m_ManualTolerance) {
                 alpha=((-1)*(peaks[n+1])+beta)/(log((100.0-static_cast<double>(m_Tolerance))/static_cast<double>(m_Tolerance)));
+                m_Alphas.push_back(static_cast<double>(alpha));
             }else{
                 alpha=((-1)*(peaks[n+1])+beta)/(log(0.99/(1.0-0.99)));
+                m_Alphas.push_back(static_cast<double>(alpha));
             }
 
             //Apply logistic curve in the n-th tissue
@@ -360,10 +368,13 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
             }
 
             beta=valleys[n-1];
+            m_Betas.push_back(beta);
             if (m_ManualTolerance) {
                 alpha=((-1)*(peaks[n-1])+beta)/(log((100.0-static_cast<double>(m_Tolerance))/static_cast<double>(m_Tolerance)));
+                m_Alphas.push_back(static_cast<double>(alpha));
             }else{
                 alpha=((-1)*(peaks[n-1])+beta)/(log(0.99/(1.0-0.99)));
+                m_Alphas.push_back(static_cast<double>(alpha));
             }
 
             //Apply logistic curve in the n-th tissue
