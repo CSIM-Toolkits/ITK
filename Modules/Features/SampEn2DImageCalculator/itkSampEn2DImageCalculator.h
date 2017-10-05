@@ -3,7 +3,12 @@
 
 #include "itkObject.h"
 #include "itkObjectFactory.h"
-#include "itkShapedNeighborhoodIterator.h"
+#include "itkImageRegionConstIterator.h"
+#include "itkStatisticsImageFilter.h"
+#include "itkNumericTraits.h"
+
+#include "stdlib.h"
+#include <ctime>
 
 namespace itk
 {
@@ -28,93 +33,98 @@ template< typename TInputImage >
 class SampEn2DImageCalculator:public Object
 {
 public:
-  /** Standard class typedefs. */
-  typedef SampEn2DImageCalculator Self;
-  typedef Object                        Superclass;
-  typedef SmartPointer< Self >          Pointer;
-  typedef SmartPointer< const Self >    ConstPointer;
+    itkStaticConstMacro(InputImageDimension, unsigned int,
+                        TInputImage::ImageDimension);
 
-  /** Type definition for the output image entropy value. This is the type which the image will be cast. */
-  typedef double DoublePixelType;
+    /** Standard class typedefs. */
+    typedef SampEn2DImageCalculator Self;
+    typedef Object                        Superclass;
+    typedef SmartPointer< Self >          Pointer;
+    typedef SmartPointer< const Self >    ConstPointer;
+
+    /** Type definition for the output image entropy value. This is the type which the image will be cast. */
+    typedef double DoublePixelType;
     typedef unsigned int MParameterValueType;
     typedef double RParameterValueType;
-   typedef ShapedNeighborhoodIterator<TInputImage> ShapeIteratorType;
+    typedef ImageRegionConstIterator<TInputImage>       ConstRegionIteratorType;
 
-  /** Method for creation through the object factory. */
-  itkNewMacro(Self);
+    /** Method for creation through the object factory. */
+    itkNewMacro(Self);
 
-  /** Run-time type information (and related methods). */
-  itkTypeMacro(SampEn2DImageCalculator, Object);
+    /** Run-time type information (and related methods). */
+    itkTypeMacro(SampEn2DImageCalculator, Object);
 
-  /** Type definition for the input image. */
-  typedef TInputImage ImageType;
+    /** Type definition for the input image. */
+    typedef TInputImage ImageType;
 
-  /** Pointer type for the image. */
-  typedef typename TInputImage::Pointer ImagePointer;
+    /** Pointer type for the image. */
+    typedef typename TInputImage::Pointer ImagePointer;
 
-  /** Const Pointer type for the image. */
-  typedef typename TInputImage::ConstPointer ImageConstPointer;
+    /** Const Pointer type for the image. */
+    typedef typename TInputImage::ConstPointer ImageConstPointer;
 
-  /** Type definition for the input image pixel type. */
-  typedef typename TInputImage::PixelType PixelType;
+    /** Type definition for the input image pixel type. */
+    typedef typename TInputImage::PixelType PixelType;
 
 
-  /** Type definition for the input image index type. */
-  typedef typename TInputImage::IndexType IndexType;
+    /** Type definition for the input image index type. */
+    typedef typename TInputImage::IndexType IndexType;
 
-  /** Type definition for the input image region type. */
-  typedef typename TInputImage::RegionType RegionType;
+    /** Type definition for the input image region type. */
+    typedef typename TInputImage::RegionType RegionType;
 
-  /** Set the input image. */
-  itkSetConstObjectMacro(Image, ImageType);
+    /** Set the input image. */
+    itkSetConstObjectMacro(Image, ImageType);
 
-  /** Set the M parameter value. */
-  itkSetMacro(M, MParameterValueType);
+    /** Set the M parameter value. */
+    itkSetMacro(M, MParameterValueType);
 
-  /** Set the R parameter value. */
-  itkSetMacro(R, RParameterValueType);
+    /** Set the R parameter value. */
+    itkSetMacro(R, RParameterValueType);
 
-  /** Get the M parameter value. */
-  itkGetMacro(M, MParameterValueType);
+    /** Get the M parameter value. */
+    itkGetMacro(M, MParameterValueType);
 
-  /** Get the R parameter value. */
-  itkGetMacro(R, RParameterValueType);
+    /** Get the R parameter value. */
+    itkGetMacro(R, RParameterValueType);
 
-  /** Compute the two-dimensional sample entropy value of the input image. */
-  void ComputeEntropy(void);
+    /** Compute the two-dimensional sample entropy value of the input image. */
+    void ComputeEntropy(void);
 
-  /** Return the entropy value. */
-  itkGetConstMacro(Entropy, DoublePixelType);
+    /** Return the entropy value. */
+    itkGetConstMacro(Entropy, DoublePixelType);
 
-  /** Set the region over which the values will be computed */
-  void SetRegion(const RegionType & region);
+    /** Set the region over which the values will be computed */
+    void SetRegion(const RegionType & region);
 
 
 protected:
-  SampEn2DImageCalculator();
-  virtual ~SampEn2DImageCalculator() {}
-  virtual void PrintSelf(std::ostream & os, Indent indent) const ITK_OVERRIDE;
+    SampEn2DImageCalculator();
+    virtual ~SampEn2DImageCalculator() {}
+    virtual void PrintSelf(std::ostream & os, Indent indent) const ITK_OVERRIDE;
 
 
 private:
-  SampEn2DImageCalculator(const Self &); //purposely not implemented
-  void operator=(const Self &);                //purposely not implemented
+    SampEn2DImageCalculator(const Self &); //purposely not implemented
+    void operator=(const Self &);                //purposely not implemented
 
-  DoublePixelType     m_Entropy;
-  MParameterValueType m_M;
-  RParameterValueType m_R;
-  ImageConstPointer   m_Image;
+    DoublePixelType     m_Entropy;
+    MParameterValueType m_M;
+    RParameterValueType m_R;
+    ImageConstPointer   m_Image;
 
-  /** Test to check the M and R parameters values */
-  void ParametersCertification();
+    /** Test to check the M and R parameters values */
+    void ParametersCertification();
 
-  void ActivateOffsetsShapedNeighborhoods(ShapeIteratorType *it, MParameterValueType mValue);
+    bool similarNext(double* image, int x1, int y1, int x2, int y2, int m, double r);
+    bool similar(double* image, int x1, int y1, int x2, int y2, int m, double r);
 
-  bool IsSimilar(ShapeIteratorType *it1, ShapeIteratorType *it2, DoublePixelType tolerance);
+    //  void SetVisitedRegion(NeighborhoodType *it);
 
-  RegionType m_Region;
-  bool       m_RegionSetByUser;
-  bool       m_IsSimilar;
+    RegionType m_Region;
+    bool       m_RegionSetByUser;
+    bool       m_IsSimilar;
+    int        m_Nx,m_Ny;
 };
 } // end namespace itk
 

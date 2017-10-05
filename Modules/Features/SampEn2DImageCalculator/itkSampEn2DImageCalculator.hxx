@@ -19,12 +19,6 @@
 #define __itkSampEn2DImageCalculator_hxx
 
 #include "itkSampEn2DImageCalculator.h"
-#include "itkShapedNeighborhoodIterator.h"
-#include "itkStatisticsImageFilter.h"
-#include "itkNumericTraits.h"
-
-
-#include "stdlib.h"
 
 using namespace std;
 
@@ -45,16 +39,6 @@ SampEn2DImageCalculator< TInputImage >
     m_IsSimilar = false;
 }
 
-template<typename TInputImage>
-void SampEn2DImageCalculator<TInputImage>
-::ActivateOffsetsShapedNeighborhoods(ShapeIteratorType *it, MParameterValueType mValue){
-    for (int x = 0; x < mValue; ++x) {
-        for (int y = 0; y < mValue; ++y) {
-            it->ActivateOffset({{x, y}});
-        }
-    }
-}
-
 /**
  * Compute Entropy of m_Image
  */
@@ -71,17 +55,7 @@ SampEn2DImageCalculator< TInputImage >
     ParametersCertification();
 
     typename ImageType::SizeType radius;
-    radius[0] = static_cast<int>(m_M);
-    radius[1] = static_cast<int>(m_M);
-    ShapeIteratorType firstWindowItM(radius, m_Image, m_Region);
-    ShapeIteratorType firstWindowItMp1(radius, m_Image, m_Region);
-    ShapeIteratorType secondWindowItM(radius, m_Image, m_Region);
-    ShapeIteratorType secondWindowItMp1(radius, m_Image, m_Region);
-
-    ActivateOffsetsShapedNeighborhoods(&firstWindowItM, m_M);
-    ActivateOffsetsShapedNeighborhoods(&secondWindowItM,m_M);
-    ActivateOffsetsShapedNeighborhoods(&firstWindowItMp1,m_M+1);
-    ActivateOffsetsShapedNeighborhoods(&secondWindowItMp1,m_M+1);
+    radius.Fill(static_cast<int>(m_M));
 
     m_Entropy = NumericTraits< PixelType >::ZeroValue();
 
@@ -90,64 +64,81 @@ SampEn2DImageCalculator< TInputImage >
     statisticsImageFilter->SetInput(m_Image);
     statisticsImageFilter->Update();
 
+    DoublePixelType tolerance = m_R*statisticsImageFilter->GetSigma();
 
-    DoublePixelType SD = statisticsImageFilter->GetSigma();
-    DoublePixelType tolerance = m_R*SD;
+    typename ImageType::SizeType size = m_Region.GetSize();
 
-  //  cout<<"M: "<<m_M<<endl;
-  //  cout<<"R: "<<m_R<<endl;
-  //  cout<<"SD: "<<SD<<endl;
-  //  cout<<"Tolerance: "<<tolerance<<endl;
+    //    clock_t begin, end;
+    //    begin=clock();
 
-    /** Matches for (m+1)-length patterns */
-    MParameterValueType A = NumericTraits<MParameterValueType>::ZeroValue();
-    /** Matches for (m)-length patterns */
-    MParameterValueType B = NumericTraits<MParameterValueType>::ZeroValue();
+    m_Nx = size[0];
+    m_Ny = size[1];
 
+    double image_matrix[m_Nx*m_Ny];
 
-    MParameterValueType Cim= NumericTraits<MParameterValueType>::ZeroValue();
-    MParameterValueType Cim1= NumericTraits<MParameterValueType>::ZeroValue();
-    RParameterValueType CimDensity= NumericTraits<RParameterValueType>::ZeroValue();
-    RParameterValueType Cim1Density= NumericTraits<RParameterValueType>::ZeroValue();
-
-    typename ImageType::RegionType region = m_Image->GetLargestPossibleRegion();
-    typename ImageType::SizeType size = region.GetSize();
-    RParameterValueType density = size[0]*size[1];
-
-    firstWindowItM.Begin();
-    firstWindowItMp1.Begin();
-    while(!firstWindowItM.IsAtEnd()){
-        secondWindowItM.Begin();
-        secondWindowItMp1.Begin();
-        while(!secondWindowItM.IsAtEnd()){
-            //            firstWindowIt.Get
-            if(IsSimilar(&firstWindowItM, &secondWindowItM,tolerance)){
-                ++B;
-                ++Cim;
-            }
-            if(IsSimilar(&firstWindowItMp1, &secondWindowItMp1,tolerance)){
-                ++A;
-                ++Cim1;
-            }
-            ++secondWindowItM;
-            ++secondWindowItMp1;
-        }
-        CimDensity += Cim / (density - 1);
-        Cim1Density += Cim1 / (density - 1);
-        ++firstWindowItM;
-        ++firstWindowItMp1;
+    ConstRegionIteratorType    copyIt(m_Image, m_Region);
+    copyIt.GoToBegin();
+    int count=0;
+    while (!copyIt.IsAtEnd()) {
+        image_matrix[count++]=copyIt.Get();
+        ++copyIt;
     }
 
- //   cout<<"density: "<<density<<endl;
 
-    CimDensity /= density;
-    Cim1Density /= density;
+    int Cim, Cim1;
+    double Cm = 0.0;
+    double Cm1 = 0.0;
+    // Total number of patterns (for both m and m+1)
+    double den = (m_Nx - m_M) * (m_Ny - m_M);
 
-  //  cout<<"CimDensity: "<<CimDensity<<endl;
-  //  cout<<"Cim1Density: "<<Cim1Density<<endl;
+    for (int yi = 0; yi < m_Ny - m_M; yi++) {
+        for (int xi = 0; xi < m_Nx - m_M; xi++) {
 
-    m_Entropy = static_cast<double>(-1)*std::log(static_cast<double>(Cim1Density)/static_cast<double>(CimDensity));
+            // Counters of similar patterns for m and m+1
+            Cim = Cim1 = 0;
+
+            int yj = yi;
+            int xj = xi + 1;
+            while (xj < m_Nx - m_M) {
+                if (similar(image_matrix, xi, yi, xj, yj, m_M, tolerance)) {  // Similar for M?
+                    Cim++;
+
+                    // Are they still similar for the next point?
+                    if (similarNext(image_matrix, xi, yi, xj, yj, m_M, tolerance)) { // Similar for M?
+                        Cim1++;
+                    }
+                }
+                xj++;
+            }
+
+            for (yj = yi + 1; yj < m_Ny - m_M; yj++) {
+                for (xj = 0; xj < m_Nx - m_M; xj++) {
+                    if (similar(image_matrix, xi, yi, xj, yj, m_M, tolerance)) {  // Similar for M?
+                        Cim++;
+
+                        // Are they still similar for the next point?
+                        if (similarNext(image_matrix, xi, yi, xj, yj, m_M, tolerance)) { // Similar for M?
+                            Cim1++;
+                        }
+                    }
+                }
+            }
+
+            Cm += Cim / (den - 1);
+            Cm1 += Cim1 / (den - 1);
+        }
+    }
+    Cm /= den;
+    Cm1 /= den;
+
+    m_Entropy = static_cast<double>(-1)*std::log(static_cast<double>(Cm1)/static_cast<double>(Cm));
+
+    //    end=clock();
+    //    double time = (double)(end-begin)/CLOCKS_PER_SEC;
+    //    cout<<"time "<<time<<endl;
+
 }
+
 
 template< typename TInputImage >
 void
@@ -158,24 +149,40 @@ SampEn2DImageCalculator< TInputImage >
     m_RegionSetByUser = true;
 }
 
+template< typename TInputImage >
+bool
+SampEn2DImageCalculator< TInputImage >
+::similar(double* image, int x1, int y1, int x2, int y2, int m, double r)
+{
+    for (int y = 0; y < m; y++) {
+        for (int x = 0; x < m; x++) {
+            double diff = std::abs(image[x1 + x + (y1 + y)*m_Nx] - image[x2 + x + (y2 + y)*m_Nx]);
+            if (diff >= r) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 template< typename TInputImage >
 bool
 SampEn2DImageCalculator< TInputImage >
-::IsSimilar(ShapeIteratorType *it1, ShapeIteratorType *it2, DoublePixelType tolerance)
+::similarNext(double* image, int x1, int y1, int x2, int y2, int m, double r)
 {
-    double diff = static_cast<double>(0);
-
-    typename ShapeIteratorType::ConstIterator innerIt1 = it1->Begin();
-    typename ShapeIteratorType::ConstIterator innerIt2 = it2->Begin();
-
-    while (!innerIt1.IsAtEnd()) {
-        diff = innerIt1.Get()-innerIt2.Get();
-        if(diff >= tolerance){
+    double diff;
+    for (int y = 0; y <= m; y++) {  // Compares collumn M
+        diff = std::abs(image[x1 + m + (y1 + y)*m_Nx] - image[x2 + m + (y2 + y)*m_Nx]);
+        if (diff >= r) {
             return false;
         }
-        ++innerIt1;
-        ++innerIt2;
+    }
+
+    for (int x = 0; x <= m; x++) {  // Compares row M
+        diff = std::abs(image[x1 + x + (y1 + m)*m_Nx] - image[x2 + x + (y2 + m)*m_Nx]);
+        if (diff >= r) {
+            return false;
+        }
     }
 
     return true;
@@ -185,6 +192,12 @@ template< typename TInputImage >
 void SampEn2DImageCalculator< TInputImage >
 ::ParametersCertification()
 {
+    //    TODO Testar cada metodo de erro...nao aparece na saida e nao termina o codigo.
+    if (InputImageDimension != 2) {
+        itkWarningMacro( << "Wrong input image dimension: "
+                         << InputImageDimension << std::endl
+                         << "This ITK class only accepts 2D images as input data.");
+    }
     if ( m_M < 1 )
     {
         itkWarningMacro( << "Wrong value for M parameters: "
