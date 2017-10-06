@@ -68,8 +68,8 @@ SampEn2DImageCalculator< TInputImage >
 
     typename ImageType::SizeType size = m_Region.GetSize();
 
-    //    clock_t begin, end;
-    //    begin=clock();
+//        clock_t begin, end;
+//        begin=clock();
 
     m_Nx = size[0];
     m_Ny = size[1];
@@ -93,26 +93,13 @@ SampEn2DImageCalculator< TInputImage >
 
     for (int yi = 0; yi < m_Ny - m_M; yi++) {
         for (int xi = 0; xi < m_Nx - m_M; xi++) {
+            if (!hasZero(image_matrix, xi, yi, m_M)){
+                // Counters of similar patterns for m and m+1
+                Cim = Cim1 = 0;
 
-            // Counters of similar patterns for m and m+1
-            Cim = Cim1 = 0;
-
-            int yj = yi;
-            int xj = xi + 1;
-            while (xj < m_Nx - m_M) {
-                if (similar(image_matrix, xi, yi, xj, yj, m_M, tolerance)) {  // Similar for M?
-                    Cim++;
-
-                    // Are they still similar for the next point?
-                    if (similarNext(image_matrix, xi, yi, xj, yj, m_M, tolerance)) { // Similar for M?
-                        Cim1++;
-                    }
-                }
-                xj++;
-            }
-
-            for (yj = yi + 1; yj < m_Ny - m_M; yj++) {
-                for (xj = 0; xj < m_Nx - m_M; xj++) {
+                int yj = yi;
+                int xj = xi + 1;
+                while (xj < m_Nx - m_M) {
                     if (similar(image_matrix, xi, yi, xj, yj, m_M, tolerance)) {  // Similar for M?
                         Cim++;
 
@@ -121,11 +108,25 @@ SampEn2DImageCalculator< TInputImage >
                             Cim1++;
                         }
                     }
+                    xj++;
                 }
-            }
 
-            Cm += Cim / (den - 1);
-            Cm1 += Cim1 / (den - 1);
+                for (yj = yi + 1; yj < m_Ny - m_M; yj++) {
+                    for (xj = 0; xj < m_Nx - m_M; xj++) {
+                        if (similar(image_matrix, xi, yi, xj, yj, m_M, tolerance)) {  // Similar for M?
+                            Cim++;
+
+                            // Are they still similar for the next point?
+                            if (similarNext(image_matrix, xi, yi, xj, yj, m_M, tolerance)) { // Similar for M?
+                                Cim1++;
+                            }
+                        }
+                    }
+                }
+
+                Cm += Cim / (den - 1);
+                Cm1 += Cim1 / (den - 1);
+            }
         }
     }
     Cm /= den;
@@ -133,9 +134,9 @@ SampEn2DImageCalculator< TInputImage >
 
     m_Entropy = static_cast<double>(-1)*std::log(static_cast<double>(Cm1)/static_cast<double>(Cm));
 
-    //    end=clock();
-    //    double time = (double)(end-begin)/CLOCKS_PER_SEC;
-    //    cout<<"time "<<time<<endl;
+//        end=clock();
+//        double time = (double)(end-begin)/CLOCKS_PER_SEC;
+//        cout<<"time "<<time<<endl;
 
 }
 
@@ -147,6 +148,21 @@ SampEn2DImageCalculator< TInputImage >
 {
     m_Region = region;
     m_RegionSetByUser = true;
+}
+
+template< typename TInputImage >
+bool
+SampEn2DImageCalculator< TInputImage >
+::hasZero(double* image, int x1, int y1, int m)
+{
+    for (int y = 0; y < m; y++) {
+        for (int x = 0; x < m; x++) {
+            if (image[x1 + x + (y1 + y)*m_Nx]==0) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 template< typename TInputImage >
