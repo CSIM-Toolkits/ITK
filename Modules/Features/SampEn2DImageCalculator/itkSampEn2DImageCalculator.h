@@ -118,6 +118,7 @@ private:
 
     bool similarNext(double* image, int x1, int y1, int x2, int y2, int m, double r);
     bool similar(double* image, int x1, int y1, int x2, int y2, int m, double r);
+    bool hasZero(double* image, int x1, int y1, int m);
 
     //  void SetVisitedRegion(NeighborhoodType *it);
 
