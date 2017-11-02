@@ -87,12 +87,6 @@ AutomaticConductanceImageCalculator< TInputImage >
     typename GradientFilter::Pointer gradient = GradientFilter::New();
     gradient->SetInput(image);
 
-    //Image statistics
-    typedef itk::StatisticsImageFilter<TInputImage>    StatisticsFilter;
-    typename StatisticsFilter::Pointer statImage = StatisticsFilter::New();
-    statImage->SetInput(gradient->GetOutput());
-    statImage->Update();
-
     //Gradient magnitude histogram
     const unsigned int MeasurementVectorSize = 1; // Grayscale
     const unsigned int binsPerDimension = 256;
