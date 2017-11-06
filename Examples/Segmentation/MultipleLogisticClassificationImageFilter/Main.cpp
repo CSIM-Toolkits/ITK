@@ -3,16 +3,16 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 
-#include "itkBrainLogisticSegmentationImageFilter.h"
+#include "itkMultipleLogisticClassificationImageFilter.h"
 
 int main(int argc, char* argv[])
 {
-    if ( argc < 3 )
+    if ( argc < 4 )
     {
         std::cerr << "Missing parameters. " << std::endl;
         std::cerr << "Usage: " << std::endl;
         std::cerr << argv[0]
-                << " inputImageFileName outputImageFileName nTissues"
+                << " inputImageFileName outputImageFileName nTissues numberOfTissues"
                 << std::endl;
         return -1;
     }
@@ -39,24 +39,18 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    typedef itk::BrainLogisticSegmentationImageFilter<InputImageType>  FilterType;
+    typedef itk::MultipleLogisticClassificationImageFilter<InputImageType>  FilterType;
     FilterType::Pointer filter = FilterType::New();
     filter->SetInput(reader->GetOutput());
+
+    if (atoi(argv[4])!=0) {
+        filter->UseManualNumberOfBinsOn();
+        filter->SetNumberOfBins(atoi(argv[4]));
+    }
+
     filter->SetNumberOfTissues(atoi(argv[3]));
     filter->DebugModeOn();
     filter->Update();
-
-    cout<<"Histogram Peaks: [ ";
-    for (int i = 0; i < filter->GetHistogramPeaks().size(); ++i) {
-        cout<<filter->GetHistogramPeaks()[i]<<" ";
-    }
-    cout<<" ]"<<endl;
-
-    cout<<"Histogram Valleys: [ ";
-    for (int i = 0; i < filter->GetHistogramValleys().size(); ++i) {
-        cout<<filter->GetHistogramValleys()[i]<<" ";
-    }
-    cout<<" ]"<<endl;
 
     cout<<"Betas: [ ";
     for (int i = 0; i < filter->GetBetas().size(); ++i) {

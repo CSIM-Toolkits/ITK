@@ -13,9 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-#ifndef __itkBrainLogisticSegmentationImageFilter_hxx
-#define __itkBrainLogisticSegmentationImageFilter_hxx
-#include "itkBrainLogisticSegmentationImageFilter.h"
+#ifndef __itkMultipleLogisticClassificationImageFilter_hxx
+#define __itkMultipleLogisticClassificationImageFilter_hxx
+#include "itkMultipleLogisticClassificationImageFilter.h"
 
 
 
@@ -25,29 +25,29 @@ using namespace std;
 namespace itk
 {
 template< typename TInput, typename TOutput>
-BrainLogisticSegmentationImageFilter< TInput, TOutput >
-::BrainLogisticSegmentationImageFilter()
+MultipleLogisticClassificationImageFilter< TInput, TOutput >
+::MultipleLogisticClassificationImageFilter()
 {
     this->m_Tolerance=1;
     this->m_ManualTolerance=false;
     this->m_DebugMode=false;
-//    this->m_NumberOfBins=32;
+    //    this->m_NumberOfBins=32;
     this->m_NumberOfTissues=3;
 }
 
 template< typename TInput, typename TOutput >
 void
-BrainLogisticSegmentationImageFilter< TInput, TOutput >
+MultipleLogisticClassificationImageFilter< TInput, TOutput >
 ::GenerateOutputInformation(void){
     this->Superclass::GenerateOutputInformation();
 
-      OutputImageType *output = this->GetOutput();
-      output->SetNumberOfComponentsPerPixel( m_NumberOfTissues );
+    OutputImageType *output = this->GetOutput();
+    output->SetNumberOfComponentsPerPixel( m_NumberOfTissues );
 }
 
 template< typename TInput, typename TOutput >
 void
-BrainLogisticSegmentationImageFilter< TInput, TOutput >
+MultipleLogisticClassificationImageFilter< TInput, TOutput >
 ::GenerateData()
 {
     checkTolerance(m_Tolerance);
@@ -61,21 +61,9 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
 
     //Mounting input histogram
     //Step 1: Getting input data
-    InputPixelType min_input=NumericTraits<InputPixelType>::max(),max_input=NumericTraits<InputPixelType>::min();
     typedef itk::ImageRegionConstIterator<InputImageType> ConstRegionIterator;
     ConstRegionIterator inputIt(input, input->GetRequestedRegion());
     inputIt.GoToBegin();
-    while (!inputIt.IsAtEnd()) {
-        if (inputIt.Get() > static_cast<InputPixelType>(0)) {
-            if (inputIt.Get()<min_input) {
-                min_input=inputIt.Get();
-            }
-            if (inputIt.Get()>max_input) {
-                max_input=inputIt.Get();
-            }
-        }
-        ++inputIt;
-    }
 
     //Step 2: Removing zeros
     inputIt.GoToBegin();
@@ -102,70 +90,6 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
     }
 
     //Step 4:Defining the number of bins from input values range
-    if (!m_UseManualNumberOfBins) {
-        m_NumberOfBins=(int)sqrt(max-min); //Using the rule of squares.
-    }
-
-    if (m_DebugMode) {
-        cout<<"Number of bins: "<<m_NumberOfBins<<endl;
-    }
-
-    //Image histogram
-    typedef itk::Statistics::Histogram< typename InputImageType::PixelType, itk::Statistics::DenseFrequencyContainer2 > HistogramType;
-    typename HistogramType::Pointer histogram = HistogramType::New();
-    typename HistogramType::SizeType size(1);
-
-    unsigned int binsPerDimension = m_NumberOfBins;
-    size.Fill(binsPerDimension);
-
-    typename HistogramType::MeasurementVectorType lowerBound;
-    lowerBound.SetSize(binsPerDimension);
-    lowerBound.Fill(min);
-
-    typename HistogramType::MeasurementVectorType upperBound;
-    upperBound.SetSize(binsPerDimension);
-    upperBound.Fill(max);
-    histogram->SetMeasurementVectorSize(1);
-    histogram->Initialize(size, lowerBound, upperBound );
-
-
-    typename HistogramType::IndexType index(1);
-    typename HistogramType::MeasurementVectorType mv(1);
-
-    //Step 5: Recalculating histogram
-    for (int j = 0; j < data.size(); ++j) {
-        mv[0]=data[j];
-        histogram->GetIndex(mv,index);
-        histogram->IncreaseFrequencyOfIndex(index, 1);
-    }
-
-
-    //Step 6: Removing outliers in the input data. Procesure similar to what is done in FSL-BET brain extraction.
-    vector<int> freq;
-    for (int p = 0; p < histogram->Size(); ++p) {
-        freq.push_back(histogram->GetFrequency(p));
-    }
-
-    vector<double> cdf;
-    InputPixelType sum=0,cdf_sum=0;
-    for (int p = 0; p < freq.size(); ++p) {
-        sum+=freq[p];
-    }
-
-    for (int i = 0; i < freq.size(); ++i) {
-        cdf_sum+=(double)freq[i]/(double)sum;
-        cdf.push_back(cdf_sum);
-    }
-
-    for (int i = 0; i < cdf.size(); ++i) {
-        //Correcting data set to remove CDF lower than 2% and higher than 98%.
-        if (cdf[i]<0.02 || cdf[i]>0.99) {
-            index(0)=i;
-            histogram->SetFrequencyOfIndex(index, 0);
-        }
-    }
-
-    //Step 7: Finding n peaks and (n-1) valleys in the corrected histogram
     std::vector<InputPixelType> peaks, valleys;
     //Setting the first values to zero
     for (int i = 0; i < m_NumberOfTissues+1; ++i) {
@@ -175,24 +99,71 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
         valleys.push_back(0);
     }
 
-//    int nTissues=1;
-//    for (int p = 0; p < freq.size() - 2; ++p) {
-//        if (nTissues>m_NumberOfTissues) {
-//            break;
-//        }
-//        if (freq[p+1]-freq[p]<0) {
-//            // Find a valley
-//            if (freq[p+2]-freq[p+1]>0) {
-//                valleys[m_NumberOfTissues-nTissues]=histogram->GetBinMax(0,p+1);
-//            }
-//        }else{
-//            //Find a peak
-//            if (freq[p+2]-freq[p+1]<0) {
-//                peaks[m_NumberOfTissues-nTissues]=histogram->GetBinMax(0,p+1);
-//                nTissues++;
-//            }
-//        }
-//    }
+
+    bool doBinCorrection=true;
+    int binCorrectionWeight = 1;
+    while(doBinCorrection){
+        if (!m_UseManualNumberOfBins) {
+            m_NumberOfBins=(int)(sqrt(max-min))*binCorrectionWeight; //Using the rule of squares.
+        }
+
+        //Image histogram
+        typedef itk::Statistics::Histogram< typename InputImageType::PixelType, itk::Statistics::DenseFrequencyContainer2 > HistogramType;
+        typename HistogramType::Pointer histogram = HistogramType::New();
+        typename HistogramType::SizeType size(1);
+
+        unsigned int binsPerDimension = m_NumberOfBins;
+        size.Fill(binsPerDimension);
+
+        typename HistogramType::MeasurementVectorType lowerBound;
+        lowerBound.SetSize(binsPerDimension);
+        lowerBound.Fill(min);
+
+        typename HistogramType::MeasurementVectorType upperBound;
+        upperBound.SetSize(binsPerDimension);
+        upperBound.Fill(max);
+        histogram->SetMeasurementVectorSize(1);
+        histogram->Initialize(size, lowerBound, upperBound );
+
+
+        typename HistogramType::IndexType index(1);
+        typename HistogramType::MeasurementVectorType mv(1);
+
+        //Step 5: Recalculating histogram
+        for (int j = 0; j < data.size(); ++j) {
+            mv[0]=data[j];
+            histogram->GetIndex(mv,index);
+            histogram->IncreaseFrequencyOfIndex(index, 1);
+        }
+
+
+        //Step 6: Removing outliers in the input data. Procesure similar to what is done in FSL-BET brain extraction.
+        vector<int> freq;
+        for (int p = 0; p < histogram->Size(); ++p) {
+            freq.push_back(histogram->GetFrequency(p));
+        }
+
+        vector<double> cdf;
+        InputPixelType sum=0,cdf_sum=0;
+        for (int p = 0; p < freq.size(); ++p) {
+            sum+=freq[p];
+        }
+
+        for (int i = 0; i < freq.size(); ++i) {
+            cdf_sum+=(double)freq[i]/(double)sum;
+            cdf.push_back(cdf_sum);
+        }
+
+        for (int i = 0; i < cdf.size(); ++i) {
+            //Correcting data set to remove CDF lower than 2% and higher than 98%.
+            if (cdf[i]<0.02 || cdf[i]>0.99) {
+                index(0)=i;
+                histogram->SetFrequencyOfIndex(index, 0);
+            }
+        }
+
+        //Step 7: Finding n peaks and (n-1) valleys in the corrected histogram
+
 
 
         //Calculating 1st derivate of the histogram
@@ -213,16 +184,25 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
 
         //Getting the peaks from the histogram
         for (int n = 0; n < max_index.size(); ++n) {
-            peaks[n]=histogram->GetBinMax(0,max_index[n]);            
-            m_HistogramPeaks.push_back(static_cast<double>(histogram->GetBinMax(0,max_index[n])));
+            peaks[n]=histogram->GetBinMax(0,max_index[n]);
+            m_HistogramPeaks.push_back(static_cast<double>(peaks[n]));
         }
         for (int n = 0; n < min_index.size(); ++n) {
             valleys[n]=histogram->GetBinMax(0,min_index[n]);
-            m_HistogramValleys.push_back(static_cast<double>(histogram->GetBinMax(0,min_index[n])));
+            m_HistogramValleys.push_back(static_cast<double>(valleys[n]));
         }
 
+        if (m_DebugMode && binCorrectionWeight>1) {
+            cout<<"Correcting number of bins: "<<binCorrectionWeight<<" times..."<<endl;
+        }
+        if (peaks[m_NumberOfTissues-1]!=0 || binCorrectionWeight>3) { //A stop criteria is needed in order to not increase the nuber of bins too much.
+            doBinCorrection=false;
+        }
+        binCorrectionWeight++;
+    }
 
     if (m_DebugMode) {
+        cout<<"Number of bins: "<<m_NumberOfBins<<endl;
         cout<<"Histogram peaks: ";
         for (int n = 0; n < m_NumberOfTissues; ++n) {
             cout<<peaks[n]<<" ";
@@ -437,7 +417,7 @@ BrainLogisticSegmentationImageFilter< TInput, TOutput >
 
 template<typename TInput, typename TOutput>
 void
-BrainLogisticSegmentationImageFilter<TInput, TOutput>
+MultipleLogisticClassificationImageFilter<TInput, TOutput>
 ::checkTolerance(char tolerance) {
     if (tolerance >= 50) {
         std::cout<<"Tolerance is out of bound. Set in percentual [0 to 50["<<std::endl;
