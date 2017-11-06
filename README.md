@@ -21,7 +21,7 @@ Each method implemented here are organized in different categories, following th
   
 ### Module: Segmentation
   * Generalized Entropy Threshold 
-  * Brain Logistic Segmentation
+  * Multiple Logistic Classification
 
 # Installation Procedure
 
