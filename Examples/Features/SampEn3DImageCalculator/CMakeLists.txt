@@ -6,7 +6,7 @@ endif()
 
 
 # This project is designed to be built outside the Insight source tree.
-project(BrainLogisticSegmentationImageFilter)
+project(SampEn3DImageCalculator)
 
 # Find ITK.
 find_package(ITK REQUIRED)
@@ -17,11 +17,11 @@ IF(ITK_FOUND)
             "Cannot build InsightApplications without ITK.  Please set ITK_DIR.")
   ENDIF(ITK_FOUND)
 
-add_executable(BrainLogisticSegmentationImageFilter
+add_executable(SampEn3DImageCalculator
 Main.cpp
-itkBrainLogisticSegmentationImageFilter.h
-itkBrainLogisticSegmentationImageFilter.hxx
+itkSampEn3DImageCalculator.h
+itkSampEn3DImageCalculator.hxx
 )
 
 
-target_link_libraries(BrainLogisticSegmentationImageFilter ${ITK_LIBRARIES} )
+target_link_libraries(SampEn3DImageCalculator ${ITK_LIBRARIES} )
