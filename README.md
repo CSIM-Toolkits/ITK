@@ -15,7 +15,7 @@ Each method implemented here are organized in different categories, following th
 ### Module: Features
   * Diffusion Entropy Mapping
   * Sample Entropy 2D
-  * Logist Contrast Enhancement
+  * Logistic Contrast Enhancement
   * Image Quality Metrics
   * Automatic Conductance Image Calculator
   
@@ -49,13 +49,20 @@ All methods are under the ITK license. However, if you use any of this methods i
 
 [Automatic Conductance Estimation Methods for Anisotropic Diffusion ITK Filters, Insight-Journal, 2017](http://insight-journal.org/browse/publication/983)
 
+## Logistic Contrast Enhancement
+
+[A hybrid approach based on logistic classification and iterative contrast enhancement algorithm for hyperintense Multiple Sclerosis lesion segmentation, Medical & Biological Engineering & Computing, 2017](http://doi.org/10.1007/s11517-017-1747-2)
+
+## Multiple Logistic Classification
+
+[Extracting Image Objects by Multiple Logistic Classification Algorithm, Insight-Journal, 2017](http://hdl.handle.net/10380/3589)
 
 # Contact
 
 This repository is provided by the CSIM research group and if you want to give us a feedback or report a problem, please send an email to:
 
-MSc. Antonio Carlos da S. Senra Filho (Ph.D. student):  [email](mailto:acsenrafilho@usp.br)
+Ph.D. Antonio Carlos da S. Senra Filho:  [email](mailto:acsenrafilho@usp.br), [ResearchGate](https://www.researchgate.net/profile/Antonio_Carlos_Senra_Filho)
 
-Prof. Ph.D. Luiz Otavio Murta Junior (PI): [email](mailto:murta@usp.br)
+Prof. Ph.D. Luiz Otavio Murta Junior (PI): [email](mailto:murta@usp.br), [ResearchGate](https://www.researchgate.net/profile/Luiz_Murta)
 
 or enter in our group [website](http://dcm.ffclrp.usp.br/csim) to see more details about our research projects!
