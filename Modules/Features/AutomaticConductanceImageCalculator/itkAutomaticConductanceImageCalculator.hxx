@@ -116,15 +116,15 @@ AutomaticConductanceImageCalculator< TInputImage >
 
     typename ImageToHistogramFilterType::HistogramType* histogramG = gradToHist->GetOutput();
 
-    double cumulativeSum = 0.0, total = 0.0, percentage = 0.0;
+    double cumulativeSum = 0.0, total = 0.0;
     for (int idx = 0; idx < histogramG->GetSize()[0]; ++idx) {
         total+=histogramG->GetFrequency(idx);
     }
 
     for (int idx = 0; idx < histogramG->GetSize()[0]; ++idx) {
         cumulativeSum+=histogramG->GetFrequency(idx);
-        percentage += cumulativeSum/total;
-        if (percentage > 0.9) {
+        double percentage = cumulativeSum/total;
+        if (percentage >= 0.9) {
             m_Kappa = static_cast<PixelType>(histogramG->GetBinMinFromValue(0,histogramG->GetMeasurement(idx,0)));
             break;
         }
