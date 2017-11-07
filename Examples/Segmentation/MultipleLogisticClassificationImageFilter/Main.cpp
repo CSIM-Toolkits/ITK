@@ -7,12 +7,12 @@
 
 int main(int argc, char* argv[])
 {
-    if ( argc < 4 )
+    if ( argc < 5 )
     {
         std::cerr << "Missing parameters. " << std::endl;
         std::cerr << "Usage: " << std::endl;
         std::cerr << argv[0]
-                << " inputImageFileName outputImageFileName nTissues numberOfTissues"
+                << " inputImageFileName outputImageFileName nTissues numberOfTissues [numberOfBins]"
                 << std::endl;
         return -1;
     }
