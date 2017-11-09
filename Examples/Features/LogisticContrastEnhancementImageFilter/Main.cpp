@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
         std::cerr << "Missing parameters. " << std::endl;
         std::cerr << "Usage: " << std::endl;
         std::cerr << argv[0]
-                << " inputImageFileName outputImageFileName [flipObject:(1 is true or 0 is false)] thrMethod "
+                << " inputImageFileName outputImageFileName [flipObject:(1 is true or 0 is false)] thrMethod"
                 << std::endl;
         return -1;
     }
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     if (atof(argv[3])==1) {
         filter->FlipObjectAreaOn();
     }
-    filter->SetThresholdMethod(atoi(argv[4]));
+    filter->SetThresholdMethod(FilterType::ThresholdMethod(atoi(argv[4])));
     filter->Update();
 
     std::cout<<"Alpha: "<<filter->GetAlpha()<<std::endl;

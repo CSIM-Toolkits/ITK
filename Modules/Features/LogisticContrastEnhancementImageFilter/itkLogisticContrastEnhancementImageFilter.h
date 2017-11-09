@@ -54,15 +54,10 @@ public:
     itkSetMacro(FlipObjectArea, bool)
     itkBooleanMacro(FlipObjectArea)
 
-    /** Set if use manual tolerance. */
-    itkSetMacro(ManualTolerance, bool)
-    itkBooleanMacro(ManualTolerance)
-
     /** Set threshold method. */
     itkSetMacro(ThresholdMethod, unsigned char)
 
     itkGetMacro(FlipObjectArea, bool)
-    itkGetMacro(ManualTolerance, bool)
     itkGetMacro(Alpha, double)
     itkGetMacro(Beta, double)
     itkGetMacro(MaximumOutput, double)
@@ -93,7 +88,6 @@ protected:
     LogisticContrastEnhancementImageFilter();
     virtual ~LogisticContrastEnhancementImageFilter() {}
     bool m_FlipObjectArea;
-    bool m_ManualTolerance;
     char m_Tolerance;
     double m_Alpha;
     double m_Beta;
