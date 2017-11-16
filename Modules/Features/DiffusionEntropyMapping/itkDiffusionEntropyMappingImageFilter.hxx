@@ -32,7 +32,8 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput >
 ::DiffusionEntropyMappingImageFilter()
 {
     m_QValue=1.0;
-    m_HistogramBins=1;
+    m_HistogramBins=2;
+    m_UseManualNumberOfBins=false;
 }
 
 template< typename TInput, typename TOutput >
@@ -90,7 +91,9 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput >
         itk::ExposeMetaData<std::string> (imgMetaDictionary, *itKey, metaString);
         if (itKey->find("DWMRI_gradient") != std::string::npos)
         {
-            std::cout << *itKey << " ---> " << metaString << std::endl;
+            if (m_DebugMode) {
+                std::cout << *itKey << " ---> " << metaString << std::endl;
+            }
             sscanf(metaString.c_str(), "%lf %lf %lf\n", &x, &y, &z);
             vect3d[0] = x; vect3d[1] = y; vect3d[2] = z;
             DiffusionVectors->InsertElement( numberOfImages, vect3d );
@@ -109,16 +112,20 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput >
         }
         else if (itKey->find("DWMRI_b-value") != std::string::npos)
         {
-            std::cout << *itKey << " ---> " << metaString << std::endl;
+            if (m_DebugMode) {
+                std::cout << *itKey << " ---> " << metaString << std::endl;
+            }
             readb0 = true;
             b0 = atof(metaString.c_str());
         }
     }
-    std::cout << "Number of gradient images: "
-              << numberOfGradientImages
-              << " and Number of reference images: "
-              << numberOfImages - numberOfGradientImages
-              << std::endl;
+    if (m_DebugMode) {
+        std::cout << "Number of gradient images: "
+                  << numberOfGradientImages
+                  << " and Number of reference images: "
+                  << numberOfImages - numberOfGradientImages
+                  << std::endl;
+    }
     if(!readb0)
     {
         std::cerr << "BValue not specified in header file" << std::endl;
@@ -128,6 +135,18 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput >
     typedef itk::ImageRegionIterator<OutputImageType>       RegionIteratorType;
     RegionConstIteratorType   diffusionIterator(input,input->GetRequestedRegion());
     RegionIteratorType        outputIterator(output, output->GetRequestedRegion());
+
+    //Setting the number of bins depending on a bin function.
+    if (m_UseManualNumberOfBins) {
+        if (m_DebugMode) {
+            cout<<"Manual number of bins: "<<m_HistogramBins<<endl;
+        }
+    }else{
+        m_HistogramBins = automaticHistogramBinCalculation(input->GetNumberOfComponentsPerPixel());
+        if (m_DebugMode) {
+            cout<<"Automatic number of bins: "<<m_HistogramBins<<endl;
+        }
+    }
 
     //    Iterate over the diffusion space to get the voxel data vector
     diffusionIterator.GoToBegin();
@@ -158,8 +177,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput >
         typename HistogramType::Pointer histogram = HistogramType::New();
         typename HistogramType::SizeType size(1);
 
-        //Setting the number of bins depending on a bin function.
-        unsigned int binsPerDimension = automaticHistogramBinCalculation(input->GetNumberOfComponentsPerPixel());
+        unsigned int binsPerDimension = m_HistogramBins;
         size.Fill(binsPerDimension);
 
         typename HistogramType::MeasurementVectorType lowerBound;
@@ -173,17 +191,10 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput >
         histogram->Initialize(size, lowerBound, upperBound );
 
         //Mounting normalized histogram
-        //Step 1: Normalizing local data
-        double Sum = 0;
-        for (int i = 0; i < input->GetNumberOfComponentsPerPixel(); ++i) {
-            if (gradients[i]!=0) {
-                Sum += static_cast<double>(diffusionIterator.Get()[i]);
-            }
-        }
         typename HistogramType::IndexType index(1);
         typename HistogramType::MeasurementVectorType mv(1);
 
-        //Step 2: Recalculating histogram
+        //Step 1: Recalculating histogram
         for (int j = 0; j < input->GetNumberOfComponentsPerPixel(); ++j) {
             if (gradients[j]!=0) {
                 mv[0]=diffusionIterator.Get()[j];

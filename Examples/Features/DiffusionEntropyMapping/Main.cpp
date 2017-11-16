@@ -47,8 +47,10 @@ int main(int argc, char* argv[])
     typedef itk::DiffusionEntropyMappingImageFilter<InputImageType>  FilterType;
     FilterType::Pointer filter = FilterType::New();
     filter->SetInput(reader->GetOutput());
+
     filter->SetHistogramBins(HistBins);
     filter->SetQValue(q);
+    filter->DebugModeOn();
     filter->Update();
 
     cout<<"filter output region: "<<filter->GetOutput()->GetRequestedRegion()<<"Filter Number of Components: "<<filter->GetOutput()->GetNumberOfComponentsPerPixel()<<endl;

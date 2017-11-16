@@ -59,12 +59,24 @@ public:
     typedef typename InputImageType::PixelType                 InputPixelType;
     typedef typename OutputImageType::PixelType                OutputPixelType;
 
-//    /** Set the object area. */
+    /** Set the q value used in the entropy calculation. */
     itkSetMacro(QValue, float)
-    itkSetMacro(HistogramBins, unsigned char)
+
+    /** Choose if define the number of bins manually. */
+    itkBooleanMacro(UseManualNumberOfBins)
+    itkSetMacro(UseManualNumberOfBins, bool)
+
+    /** Set the number of bins used in the entropy calculation. */
+    itkSetMacro(HistogramBins, unsigned int)
+
+    /** Debug mode is used to inform some messages in the standard output. */
+    itkBooleanMacro(DebugMode)
+    itkSetMacro(DebugMode, bool)
 
     itkGetMacro(QValue, float)
-    itkGetMacro(HistogramBins, unsigned char)
+    itkGetMacro(HistogramBins, unsigned int)
+    itkGetMacro(UseManualNumberOfBins, bool)
+    itkGetMacro(DebugMode, bool)
 
 #ifdef ITK_USE_CONCEPT_CHECKING
     // Begin concept checking
@@ -90,7 +102,8 @@ private:
     void operator=(const Self &);  //purposely not implemented
     unsigned int automaticHistogramBinCalculation(unsigned int n);
     float m_QValue;
-    unsigned char m_HistogramBins;
+    unsigned int m_HistogramBins;
+    bool m_UseManualNumberOfBins, m_DebugMode;
 };
 
 } // end namespace itk
