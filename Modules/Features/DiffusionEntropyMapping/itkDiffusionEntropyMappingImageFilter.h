@@ -43,7 +43,6 @@ public:
     typedef TInputImage  InputImageType;
     typedef TOutputImage OutputImageType;
 
-
     /** Standard class typedefs. */
     typedef DiffusionEntropyMappingImageFilter          Self;
     typedef ImageToImageFilter< TInputImage, TOutputImage >       Superclass;
@@ -58,6 +57,7 @@ public:
 
     typedef typename InputImageType::PixelType                 InputPixelType;
     typedef typename OutputImageType::PixelType                OutputPixelType;
+    typedef typename itk::Statistics::Histogram< OutputPixelType, itk::Statistics::DenseFrequencyContainer2 > HistogramType;
 
     /** Set the q value used in the entropy calculation. */
     itkSetMacro(QValue, float)
@@ -101,6 +101,11 @@ private:
     DiffusionEntropyMappingImageFilter(const Self &); //purposely not implemented
     void operator=(const Self &);  //purposely not implemented
     unsigned int automaticHistogramBinCalculation(unsigned int n);
+    void createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList);
+    void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg, OutputPixelType& maximum, OutputPixelType& minimum);
+    void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradients, unsigned int b0);
+    void createPriorProbabilityDistribution(typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
+    void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
     float m_QValue;
     unsigned int m_HistogramBins;
     bool m_UseManualNumberOfBins, m_DebugMode;
