@@ -32,11 +32,12 @@ SampEn2DImageCalculator< TInputImage >
 ::SampEn2DImageCalculator()
 {
     m_Image = TInputImage::New();
-    m_Entropy = NumericTraits< PixelType >::ZeroValue();
+    m_Entropy = 0.0;
     m_M = 1;
     m_R = 0.10;
+    m_D = 1;
+    m_B = 0.0;
     m_RegionSetByUser = false;
-    m_IsSimilar = false;
 }
 
 /**
@@ -57,8 +58,6 @@ SampEn2DImageCalculator< TInputImage >
     typename ImageType::SizeType radius;
     radius.Fill(static_cast<int>(m_M));
 
-    m_Entropy = NumericTraits< PixelType >::ZeroValue();
-
     typedef itk::StatisticsImageFilter<ImageType> StatisticsImageFilterType;
     typename StatisticsImageFilterType::Pointer statisticsImageFilter = StatisticsImageFilterType::New();
     statisticsImageFilter->SetInput(m_Image);
@@ -71,8 +70,8 @@ SampEn2DImageCalculator< TInputImage >
 //        clock_t begin, end;
 //        begin=clock();
 
-    m_Nx = size[0];
-    m_Ny = size[1];
+    m_Nx = size[0]; //ncols
+    m_Ny = size[1]; //nrows
 
     double image_matrix[m_Nx*m_Ny];
 
@@ -85,54 +84,343 @@ SampEn2DImageCalculator< TInputImage >
     }
 
 
-    int Cim, Cim1;
-    double Cm = 0.0;
-    double Cm1 = 0.0;
-    // Total number of patterns (for both m and m+1)
-    double den = (m_Nx - m_M) * (m_Ny - m_M);
+    //Limit indexes for cols and rows
+    int xLim = m_Nx - m_M*m_D; 
+    int yLim = m_Ny - m_M*m_D; 
+    
+    // Total number of valid patterns (for both m and m+1)
+    double den=0; 
+   
+    //Counters of similar patterns for m and m+1
+    unsigned int B, A;  // for each template pattern   
+    unsigned long long Cim=0, Cim1=0;  //sum over all template patters
 
-    for (int yi = 0; yi < m_Ny - m_M; yi++) {
-        for (int xi = 0; xi < m_Nx - m_M; xi++) {
-            if (!hasZero(image_matrix, xi, yi, m_M)){
-                // Counters of similar patterns for m and m+1
-                Cim = Cim1 = 0;
-
-                int yj = yi;
-                int xj = xi + 1;
-                while (xj < m_Nx - m_M) {
-                    if (similar(image_matrix, xi, yi, xj, yj, m_M, tolerance)) {  // Similar for M?
-                        Cim++;
-
-                        // Are they still similar for the next point?
-                        if (similarNext(image_matrix, xi, yi, xj, yj, m_M, tolerance)) { // Similar for M?
-                            Cim1++;
-                        }
-                    }
-                    xj++;
-                }
-
-                for (yj = yi + 1; yj < m_Ny - m_M; yj++) {
-                    for (xj = 0; xj < m_Nx - m_M; xj++) {
-                        if (similar(image_matrix, xi, yi, xj, yj, m_M, tolerance)) {  // Similar for M?
-                            Cim++;
-
-                            // Are they still similar for the next point?
-                            if (similarNext(image_matrix, xi, yi, xj, yj, m_M, tolerance)) { // Similar for M?
-                                Cim1++;
-                            }
-                        }
-                    }
-                }
-
-                Cm += Cim / (den - 1);
-                Cm1 += Cim1 / (den - 1);
-            }
+    //Probabilities of patterns ocurrence for m and m+1
+    double Cm, Cm1; 
+    
+    
+    int i, j; //iterators 
+    int ilim, jlim; // limits for pattern's indexes
+        
+    //Pre-allocating indexes shift for patterns matching and validation
+    int nm = m_M*m_M;  //number of pixels in pattern m
+    int nm1 = 2*m_M+1; //additional number of pixels for m+1 given m
+    int nmm1 = nm+nm1; //number of pixels in pattern m+1
+    
+    int *kdm, *kdm1, *kdmm1; //arrays with shift indexes for m and m+1 matching and validation
+    if ((kdm = (int *) calloc(nm, sizeof(int))) == NULL) exit(1);
+    if ((kdm1 = (int *) calloc(nm1, sizeof(int))) == NULL) exit(1);
+    if ((kdmm1 = (int *) calloc(nmm1, sizeof(int))) == NULL) exit(1);
+    
+    int kk;  
+    int k=0; 
+    for (i = 0; i < m_M ; i++){
+        kk = m_Ny * i * m_D;
+        for (j = 0; j < m_M ; j++ ){
+            kdm[k] = kk + j*m_D;
+            kdmm1[k] = kdm[k];
+            k++;
         }
     }
-    Cm /= den;
-    Cm1 /= den;
+    k=0;
+    for (j = 0; j <= m_M; j++) {  // Compares column m+1      
+        kdm1[k] = (m_Ny*m_M +j) * m_D;
+        kdmm1[k+nm] = kdm1[k];
+        k++;
+    }
+    for (i = 0; i < m_M; i++) {  // Compares row m+1
+        kdm1[k] = (m_Ny*i + m_M) * m_D;
+        kdmm1[k+nm] = kdm1[k];
+        k++;
+    }
+    //End pre-allocating
+    
+    int ki, kj; //pattern's reference indexes
+    double d; //differences during pattern matching
+    bool valid; //valid pattern (has no background)
+    double v;   //a moving pattern pixel value
+
+    /* Starts running */
+    for(i=0; i<yLim; i++) { //for each row
+        ilim = (i*m_Nx)+xLim; //set limit index in current row for template pattern
+        
+        ki = i*m_Nx; //ki is top left pixel of template pattern
+        
+        while (ki < ilim) { //go across columns
+            B = 0;
+            A = 0;
+          
+            //check if it is a valid pattern
+            valid = true;
+            for (k=0; k < nmm1; k++) {
+                if(image_matrix[ki+kdmm1[k]]==bv) {
+                    valid = false;
+                    break; 
+                }
+            }
+            
+            if(valid) {//if it is a valid pattern (has no background)
+
+                kj = ki+1; //kj is top left pixel of moving pattern
+
+                for(j=i; j<yLim; j++) { //for each row
+                    jlim = (j*m_Nx)+xLim; //set limit index in current row for moving pattern
+
+                    while (kj < jlim ) { //go across columns
+                        //for debug
+                        //printf("(%d) ",kj); 
+                        
+
+                        //pattern matching for m using tolerance
+                        for (k=0; k < nm; k++) {
+                            v = image_matrix[kj+kdm[k]];
+                            if(v != bv) {//if it is not a background pixel
+                                d = fabs(image_matrix[ki+kdm[k]] - v);
+                                if (d >= tolerance) {
+                                    d = -1.0; //it is not a similar pattern
+                                    break;
+                                }
+                            } else {
+                                d = -1.0; //it is not a valid pattern (has background)
+                                break;
+                            }
+                        }
+
+                        // is pattern valid and similar for m?
+                        if (d != -1.0) { 
+                            valid=true;
+                            //pattern matching for m+1 using tolerance
+                            for (kk=0; kk < nm1; kk++) {
+                                v = image_matrix[kj+kdm1[kk]];
+                                if(v != bv) {//if it is not a background pixel
+                                    d = fabs(image_matrix[ki+kdm1[kk]] - v);
+                                    if (d >= tolerance) {
+                                        d = -1.0; //it is not a similar pattern
+                                        break;
+                                    }
+                                } else {
+                                    valid = false; //it is not a valid pattern (has background)
+                                    break;
+                                }
+                            }
+
+                            if (valid) { // is pattern valid so far?
+                                //check remaining pixels
+                                while(++kk < nm1) { 
+                                    if(image_matrix[kj+kdm1[kk]] == bv) //if it is a background pixel
+                                      valid = false; //it is not a valid pattern
+                                }
+                                
+                                // is pattern valid?
+                                if (valid) {
+                                    B++; //increment m counter
+                                    if (d != -1.0) // is pattern similar for m+1?
+                                        A++; //increment m+1 counter
+                                }
+                            }
+                        }// if valid and similar for m
+
+                        kj++;
+                    }//while kj
+
+                    kj= (j+1)*m_Nx;
+                }//for j
+
+                Cim += B;
+                Cim1 += A;
+
+                den++;
+            }// if valid pattern
+            
+            ki++;
+        } //while ki    
+        //for debug
+        //printf("\n");
+        
+    } //for i
+    //for debug
+    //printf("%d \n %d \n %f \n %f \n",Cim,Cim1,den,bv);
+     
+    /* outputs: probabilities */
+    Cm = ((static_cast<double>(Cim)/(den-1.0))/den)*2.0;
+    Cm1 = ((static_cast<double>(Cim1)/(den-1.0))/den)*2.0;
+    
+    free(kdm);
+    free(kdm1);
+    free(kdmm1);
 
     m_Entropy = static_cast<double>(-1)*std::log(static_cast<double>(Cm1)/static_cast<double>(Cm));
+
+
+/*- - - - - - - - - -*/
+// //Limit indexes for cols and rows
+//     int xLim = m_Nx - m_M*m_D; 
+//     int yLim = m_Ny - m_M*m_D; 
+    
+//     // Total number of valid patterns (for both m and m+1)
+//     double den=0; 
+   
+//     //Counters of similar patterns for m and m+1
+//     unsigned int B, A;  // for each template pattern   
+//     unsigned long long Cim=0, Cim1=0;  //sum over all template patters
+
+//     //Probabilities of patterns ocurrence for m and m+1
+//     double Cm, Cm1; 
+    
+    
+//     int i, j; //col's running indexes 
+//     int ilim, jlim; // limits for pattern's indexes
+        
+//     //Pre-allocating indexes shift for patterns matching and validation
+//     int nm = m_M*m_M;
+//     int nm1 = 2*m_M+1;
+//     int nmm1 = nm+nm1;
+    
+//     int *kdm, *kdm1, *kdmm1; //arrays with shift indexes for m and m+1 matching and validation
+//     if ((kdm = (int *) calloc(nm, sizeof(int))) == NULL) exit(1);
+//     if ((kdm1 = (int *) calloc(nm1, sizeof(int))) == NULL) exit(1);
+//     if ((kdmm1 = (int *) calloc(nmm1, sizeof(int))) == NULL) exit(1);
+    
+//     int kk;  
+//     int k=0; 
+//     for (i = 0; i < m_M ; i++){
+//         kk = m_Ny * i * m_D;
+//         for (j = 0; j < m_M ; j++ ){
+//             kdm[k] = kk + j*m_D;
+//             kdmm1[k] = kdm[k];
+//             k++;
+//         }
+//     }
+//     k=0;
+//     for (j = 0; j <= m_M; j++) {  // Compares column m+1      
+//         kdm1[k] = (m_Ny*m_M +j) * m_D;
+//         kdmm1[k+nm] = kdm1[k];
+//         k++;
+//     }
+//     for (i = 0; i < m_M; i++) {  // Compares row m+1
+//         kdm1[k] = (m_Ny*i + m_M) * m_D;
+//         kdmm1[k+nm] = kdm1[k];
+//         k++;
+//     }
+//     //End pre-allocating
+    
+//     int ki, kj; //pattern's indexes
+//     double d; //differences during pattern matching
+//     bool valid; //valid pattern (has no background)
+//     double v;   //a moving pattern pixel value
+    
+//     /* Starts running */
+//     for(i=0; i<xLim; i++) { //for each column
+//         ilim = (i*m_Ny)+yLim; //set limit index for template pattern
+        
+//         ki = i*m_Ny; //ki is the template pattern
+        
+//         while (ki < ilim) {
+//             B = 0;
+//             A = 0;
+          
+//             //check if it is a valid pattern
+//             valid = true;
+//             for (k=0; k < nmm1; k++) {
+//                 if(image_matrix[ki+kdmm1[k]]==bv) {
+//                     valid = false;
+//                     break; 
+//                 }
+//             }
+            
+//             if(valid) {//if it is a valid pattern (has no background)
+
+//                 kj = ki+1; //kj is the moving pattern
+
+//                 for(j=i; j<xLim; j++) { //for each column
+//                     jlim = (j*m_Ny)+yLim; //set limit index for moving pattern
+
+//                     while (kj < jlim ) {
+//                         //for debug
+//                         //printf("(%d) ",kj); 
+                        
+
+//                         //pattern matching for m with tolerance r
+//                         for (k=0; k < nm; k++) {
+//                             v = image_matrix[kj+kdm[k]];
+//                             if(v != bv) {//if it is not a background pixel
+//                                 d = fabs(image_matrix[ki+kdm[k]] - v);
+//                                 if (d >= r) {
+//                                     d = -1.0; //it is not a similar pattern
+//                                     break;
+//                                 }
+//                             } else {
+//                                 d = -1.0; //it is not a valid pattern
+//                                 break;
+//                             }
+//                         }
+
+//                         // is pattern valid and similar for m?
+//                         if (d != -1.0) { 
+//                             valid=true;
+//                             //pattern matching for m+1 with tolerance r
+//                             for (kk=0; kk < nm1; kk++) {
+//                                 v = image_matrix[kj+kdm1[kk]];
+//                                 if(v != bv) {//if it is not a background pixel
+//                                     d = fabs(image_matrix[ki+kdm1[kk]] - v);
+//                                     if (d >= r) {
+//                                         d = -1.0; //it is not a similar pattern
+//                                         break;
+//                                     }
+//                                 } else {
+//                                     valid = false; //it is not a valid pattern
+//                                     break;
+//                                 }
+//                             }
+
+//                             if (valid) { // is pattern valid so far?
+//                                 //check remaining pixels
+//                                 while(++kk < nm1) { 
+//                                     if(image_matrix[kj+kdm1[kk]] == bv) //if it is a background pixel
+//                                       valid = false; //it is not a valid pattern
+//                                 }
+                                
+//                                 // is pattern valid?
+//                                 if (valid) {
+//                                     B++; //increment m counter
+//                                     if (d != -1.0) // is pattern similar for m+1?
+//                                         A++; //increment m+1 counter
+//                                 }
+//                             }
+//                         }// if valid and similar for m
+
+//                         kj++;
+//                     }//while kj
+
+//                     kj= (j+1)*m_Ny;
+//                 }//for j
+
+//                 Cim += B;
+//                 Cim1 += A;
+
+//                 den++;
+//             }// if valid pattern
+            
+//             ki++;
+//         } //while ki    
+//         //for debug
+//         //printf("\n");
+        
+//     } //for i
+//     //for debug
+//     //printf("%d \n %d \n %f \n %f \n",Cim,Cim1,den,bv);
+     
+//     /* outputs: probabilities */
+//     Cm = ((Cim/(den-1))/den)*2;
+//     Cm1 = ((Cim1/(den-1))/den)*2;
+    
+//     free(kdm);
+//     free(kdm1);
+//     free(kdmm1);
+
+//     m_Entropy = static_cast<double>(-1)*std::log(static_cast<double>(Cm1)/static_cast<double>(Cm));
+/*- - - - - - - - - -*/
+    
 
 //        end=clock();
 //        double time = (double)(end-begin)/CLOCKS_PER_SEC;
@@ -150,62 +438,10 @@ SampEn2DImageCalculator< TInputImage >
     m_RegionSetByUser = true;
 }
 
+
 template< typename TInputImage >
-bool
+void 
 SampEn2DImageCalculator< TInputImage >
-::hasZero(double* image, int x1, int y1, int m)
-{
-    for (int y = 0; y < m; y++) {
-        for (int x = 0; x < m; x++) {
-            if (image[x1 + x + (y1 + y)*m_Nx]==0) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-template< typename TInputImage >
-bool
-SampEn2DImageCalculator< TInputImage >
-::similar(double* image, int x1, int y1, int x2, int y2, int m, double r)
-{
-    for (int y = 0; y < m; y++) {
-        for (int x = 0; x < m; x++) {
-            double diff = std::abs(image[x1 + x + (y1 + y)*m_Nx] - image[x2 + x + (y2 + y)*m_Nx]);
-            if (diff >= r) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-template< typename TInputImage >
-bool
-SampEn2DImageCalculator< TInputImage >
-::similarNext(double* image, int x1, int y1, int x2, int y2, int m, double r)
-{
-    double diff;
-    for (int y = 0; y <= m; y++) {  // Compares collumn M
-        diff = std::abs(image[x1 + m + (y1 + y)*m_Nx] - image[x2 + m + (y2 + y)*m_Nx]);
-        if (diff >= r) {
-            return false;
-        }
-    }
-
-    for (int x = 0; x <= m; x++) {  // Compares row M
-        diff = std::abs(image[x1 + x + (y1 + m)*m_Nx] - image[x2 + x + (y2 + m)*m_Nx]);
-        if (diff >= r) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-template< typename TInputImage >
-void SampEn2DImageCalculator< TInputImage >
 ::ParametersCertification()
 {
     //    TODO Testar cada metodo de erro...nao aparece na saida e nao termina o codigo.
@@ -214,17 +450,34 @@ void SampEn2DImageCalculator< TInputImage >
                          << InputImageDimension << std::endl
                          << "This ITK class only accepts 2D images as input data.");
     }
+
     if ( m_M < 1 )
     {
         itkWarningMacro( << "Wrong value for M parameters: "
                          << m_M << std::endl
                          << "M must be an integer positive value.");
     }
-    if (m_R < 0){
+    if (m_R < 0)
+    {
         itkWarningMacro( << "Wrong value for R parameters: "
                          << m_R << std::endl
                          << "R must be a float point positive value.");
     }
+
+    if (m_D < 1)
+    {
+        itkWarningMacro( << "Wrong value for D parameters: "
+                         << m_D << std::endl
+                         << "D must be an integer positive value.");
+    }
+
+//TODO -- B must be double
+    // if (m_B < 0)
+    // {
+    //     itkWarningMacro( << "Wrong value for B parameters: "
+    //                      << m_B << std::endl
+    //                      << "B must be a float point positive value.");
+    // }
 }
 
 template< typename TInputImage >
