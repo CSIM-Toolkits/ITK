@@ -7,7 +7,8 @@
 #include "itkStatisticsImageFilter.h"
 #include "itkNumericTraits.h"
 
-#include "stdlib.h"
+#include <stdlib.h>
+#include <math.h>
 #include <ctime>
 
 namespace itk
@@ -46,6 +47,8 @@ public:
     typedef double DoublePixelType;
     typedef unsigned int MParameterValueType;
     typedef double RParameterValueType;
+    typedef unsigned int DParameterValueType;
+    typedef double BParameterValueType;
     typedef ImageRegionConstIterator<TInputImage>       ConstRegionIteratorType;
 
     /** Method for creation through the object factory. */
@@ -82,11 +85,23 @@ public:
     /** Set the R parameter value. */
     itkSetMacro(R, RParameterValueType);
 
+    /** Set the D (delay) parameter value. */
+    itkSetMacro(D, DParameterValueType);
+
+    /** Set the B (background value) parameter value. */
+    itkSetMacro(B, BParameterValueType);
+
     /** Get the M parameter value. */
     itkGetMacro(M, MParameterValueType);
 
     /** Get the R parameter value. */
     itkGetMacro(R, RParameterValueType);
+
+    /** Get the D parameter value. */
+    itkGetMacro(D, DParameterValueType);
+
+    /** Get the B parameter value. */
+    itkGetMacro(B, BParameterValueType);
 
     /** Compute the two-dimensional sample entropy value of the input image. */
     void ComputeEntropy(void);
@@ -111,20 +126,15 @@ private:
     DoublePixelType     m_Entropy;
     MParameterValueType m_M;
     RParameterValueType m_R;
+    DParameterValueType m_D;
+    BParameterValueType m_B;
     ImageConstPointer   m_Image;
 
-    /** Test to check the M and R parameters values */
-    void ParametersCertification();
-
-    bool similarNext(double* image, int x1, int y1, int x2, int y2, int m, double r);
-    bool similar(double* image, int x1, int y1, int x2, int y2, int m, double r);
-    bool hasZero(double* image, int x1, int y1, int m);
-
-    //  void SetVisitedRegion(NeighborhoodType *it);
+    /** Test to check the M, R, D and B parameters values */
+    void ParametersCertification(); 
 
     RegionType m_Region;
     bool       m_RegionSetByUser;
-    bool       m_IsSimilar;
     int        m_Nx,m_Ny;
 };
 } // end namespace itk
