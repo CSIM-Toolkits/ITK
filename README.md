@@ -18,6 +18,7 @@ Each method implemented here are organized in different categories, following th
   * Logistic Contrast Enhancement
   * Image Quality Metrics
   * Automatic Conductance Image Calculator
+  * Global Logistic Contrast Enhancement Image Filter
   
 ### Module: Segmentation
   * Generalized Entropy Threshold 
@@ -56,6 +57,10 @@ All methods are under the ITK license. However, if you use any of this methods i
 ## Multiple Logistic Classification
 
 [Extracting Image Objects by Multiple Logistic Classification Algorithm, Insight-Journal, 2017](http://hdl.handle.net/10380/3589)
+
+## Global Logistic Contrast Enhancement Image Filter
+
+[..., Insight-Journal, 2018](http://hdl.handle.net/)
 
 # Contact
 
