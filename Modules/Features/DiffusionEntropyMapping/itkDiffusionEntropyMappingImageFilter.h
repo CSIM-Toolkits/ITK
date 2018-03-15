@@ -28,7 +28,7 @@
 namespace itk
 {
 
-template< typename TInputImage, typename TOutputImage=Image<typename NumericTraits<typename TInputImage::ValueType>::ValueType, 3> >
+template< typename TInputImage, typename TOutputImage=Image<typename NumericTraits<typename TInputImage::ValueType>::ValueType, 3>, typename TInputMask=Image<unsigned char, 3> >
 class ITK_EXPORT DiffusionEntropyMappingImageFilter:
         public ImageToImageFilter< TInputImage, TOutputImage >
 {
@@ -40,9 +40,9 @@ public:
                         TOutputImage::ImageDimension);
 
     /** Convenient typedefs for simplifying declarations. */
-    typedef TInputImage  InputImageType;
-    typedef TOutputImage OutputImageType;
-
+    typedef TInputImage     InputImageType;
+    typedef TOutputImage    OutputImageType;
+    typedef TInputMask      MaskImageType;
 
     /** Standard class typedefs. */
     typedef DiffusionEntropyMappingImageFilter          Self;
@@ -56,8 +56,13 @@ public:
     /** Run-time type information (and related methods). */
     itkTypeMacro(DiffusionEntropyMappingImageFilter, ImageToImageFilter)
 
-    typedef typename InputImageType::PixelType                 InputPixelType;
-    typedef typename OutputImageType::PixelType                OutputPixelType;
+    typedef typename InputImageType::PixelType                  InputPixelType;
+    typedef typename OutputImageType::PixelType                 OutputPixelType;
+    typedef typename MaskImageType::PixelType                   MaskPixelType;
+    typedef typename itk::Statistics::Histogram< OutputPixelType, itk::Statistics::DenseFrequencyContainer2 > HistogramType;
+
+    void SetInputImage(const TInputImage* image);
+    void SetDiffusionSpace(const TInputMask* mask);
 
     /** Set the q value used in the entropy calculation. */
     itkSetMacro(QValue, float)
@@ -96,11 +101,19 @@ protected:
     DiffusionEntropyMappingImageFilter();
     virtual ~DiffusionEntropyMappingImageFilter() {}
     virtual void GenerateOutputInformation(void) ITK_OVERRIDE;
+
+    typename TInputImage::ConstPointer GetDWIImage();
+    typename TInputMask::ConstPointer GetDiffusionSpace();
     void GenerateData();
 private:
     DiffusionEntropyMappingImageFilter(const Self &); //purposely not implemented
     void operator=(const Self &);  //purposely not implemented
     unsigned int automaticHistogramBinCalculation(unsigned int n);
+    void createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList);
+    void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum);
+    void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradients, unsigned int b0);
+    void createPriorProbabilityDistribution(typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
+    void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
     float m_QValue;
     unsigned int m_HistogramBins;
     bool m_UseManualNumberOfBins, m_DebugMode;
