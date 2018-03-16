@@ -89,7 +89,7 @@ public:
     itkSetMacro(D, DParameterValueType);
 
     /** Set the B (background value) parameter value. */
-    itkSetMacro(B, BParameterValueType);
+    itkSetMacro(BackgroundValue, BParameterValueType);
 
     /** Get the M parameter value. */
     itkGetMacro(M, MParameterValueType);
@@ -101,7 +101,7 @@ public:
     itkGetMacro(D, DParameterValueType);
 
     /** Get the B parameter value. */
-    itkGetMacro(B, BParameterValueType);
+    itkGetMacro(BackgroundValue, BParameterValueType);
 
     /** Compute the two-dimensional sample entropy value of the input image. */
     void ComputeEntropy(void);
@@ -127,7 +127,7 @@ private:
     MParameterValueType m_M;
     RParameterValueType m_R;
     DParameterValueType m_D;
-    BParameterValueType m_B;
+    BParameterValueType m_BackgroundValue;
     ImageConstPointer   m_Image;
 
     /** Test to check the M, R, D and B parameters values */
