@@ -78,6 +78,9 @@ public:
     itkBooleanMacro(DebugMode)
     itkSetMacro(DebugMode, bool)
 
+    /** Set the number of possible states that are used in the entropy calculation. */
+    itkSetMacro(NumberOfStatesFunction, unsigned char)
+
     itkGetMacro(QValue, float)
     itkGetMacro(HistogramBins, unsigned int)
     itkGetMacro(UseManualNumberOfBins, bool)
@@ -97,6 +100,7 @@ public:
         RICE=3
     };
 
+
 protected:
     DiffusionEntropyMappingImageFilter();
     virtual ~DiffusionEntropyMappingImageFilter() {}
@@ -110,13 +114,14 @@ private:
     void operator=(const Self &);  //purposely not implemented
     unsigned int automaticHistogramBinCalculation(unsigned int n);
     void createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList);
-    void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum);
+    void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum, OutputPixelType& numberOfVoxels);
     void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradients, unsigned int b0);
     void createPriorProbabilityDistribution(typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
     void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
     float m_QValue;
     unsigned int m_HistogramBins;
     bool m_UseManualNumberOfBins, m_DebugMode;
+    unsigned char m_NumberOfStatesFunction;
 };
 
 } // end namespace itk

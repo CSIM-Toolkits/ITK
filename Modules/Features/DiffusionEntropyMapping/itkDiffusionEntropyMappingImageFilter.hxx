@@ -34,6 +34,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
     m_QValue=1.0;
     m_HistogramBins=2;
     m_UseManualNumberOfBins=false;
+    m_NumberOfStatesFunction=1;
     this->SetNumberOfRequiredInputs(1);
 }
 
@@ -115,14 +116,6 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
             ++usedMaskIt;
         }
     }
-
-
-    //typedef itk::ImageFileWriter<MaskImageType> writertype;
-    //    typename writertype::Pointer writer = writertype::New();
-    //    writer->SetInput(usedMaskSpace);
-    //    writer->SetFileName("/home/antonio/Downloads/DiffusionEntropyMappingImageFilter/maskSpace.nii.gz");
-    //    writer->Update();
-
 
     typedef itk::DiffusionTensor3DReconstructionImageFilter<OutputPixelType, OutputPixelType, double > TensorReconstructionImageFilterType;
     // -------------------------------------------------------------------------
@@ -215,25 +208,29 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
 
     createDiffusionWeightedValues(diffusionAcquisitionImage, diffusionImage, numberOfGradientImages, b0);
 
+    //Finding input minimum and maximum values only on the gradient volumes and also construct the global probability distribution
+    OutputPixelType minimumInputValue = NumericTraits<OutputPixelType>::max();
+    OutputPixelType maximumInputValue = NumericTraits<OutputPixelType>::min();
+    OutputPixelType numberOfVoxels = NumericTraits<OutputPixelType>::ZeroValue();
+    OutputPixelType range = NumericTraits<OutputPixelType>::ZeroValue();
+    getSpaceMaximumMinimumDiffusion(diffusionImage, usedMaskSpace, maximumInputValue, minimumInputValue, numberOfVoxels);
+
+    if (m_DebugMode) {
+        std::cout<<"Diffusion space range (max: "<<maximumInputValue<<" - min: "<<minimumInputValue<<")"<<std::endl;
+    }
+    range = maximumInputValue - minimumInputValue;
+
     //Setting the number of bins depending on a bin function.
     if (m_UseManualNumberOfBins) {
         if (m_DebugMode) {
             cout<<"Manual number of bins: "<<m_HistogramBins<<endl;
         }
     }else{
-        m_HistogramBins = automaticHistogramBinCalculation(input->GetNumberOfComponentsPerPixel());
+        m_HistogramBins = automaticHistogramBinCalculation(ceil(range/0.00005));
+//        range*numberOfVoxels*input->GetNumberOfComponentsPerPixel()
         if (m_DebugMode) {
             cout<<"Automatic number of bins: "<<m_HistogramBins<<endl;
         }
-    }
-
-    //Finding input minimum and maximum values only on the gradient volumes and also construct the global probability distribution
-    OutputPixelType minimumInputValue = NumericTraits<OutputPixelType>::max();
-    OutputPixelType maximumInputValue = NumericTraits<OutputPixelType>::min();
-    getSpaceMaximumMinimumDiffusion(diffusionImage, usedMaskSpace, maximumInputValue, minimumInputValue);
-
-    if (m_DebugMode) {
-        std::cout<<"Diffusion space range (max: "<<maximumInputValue<<" - min: "<<minimumInputValue<<")"<<std::endl;
     }
 
     typename HistogramType::Pointer prioryProbabilityDistribution = HistogramType::New();
@@ -271,7 +268,7 @@ unsigned int
 DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
 ::automaticHistogramBinCalculation(unsigned int n)
 {
-    switch (m_HistogramBins) {
+    switch (m_NumberOfStatesFunction) {
     case SQUAREROOT:
         return static_cast<unsigned int>(sqrt(n));
         break;
@@ -341,7 +338,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
 template< typename TInput, typename TOutput, typename TMask >
 void
 DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
-::getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum)
+::getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum, OutputPixelType& numberOfVoxels)
 {
     typedef itk::ImageRegionIterator<InputImageType>        InputRegionIteratorType;
     typedef itk::ImageRegionConstIterator<MaskImageType>        InputMaskRegionConstIteratorType;
@@ -352,6 +349,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
     maskIt.GoToBegin();
     while (!diffIt.IsAtEnd()) {
         if (maskIt.Get()!=static_cast<MaskPixelType>(0)) {
+            numberOfVoxels++;
             for (int min = 0; min < diffImg->GetNumberOfComponentsPerPixel(); ++min) {
                 if (diffIt.Get()[min]<minimum && diffIt.Get()[min]>0){
                     minimum=diffIt.Get()[min];
@@ -436,6 +434,9 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
     OutputRegionIteratorType        outputIterator(output, output->GetRequestedRegion());
     diffIt.GoToBegin();
     outputIterator.GoToBegin();
+
+    //Normalize the entropy value regarding the equiprobable states ln(N)
+//    double maxEntropy = std::log(m_HistogramBins);
     while (!outputIterator.IsAtEnd()) {
         //        Extract the vector data from voxel.
         //        This iterative process runs through each voxel of the input image
@@ -457,17 +458,21 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
             }else{
                 if( p > NumericTraits<double>::min() )
                 {
-                    entropy += - (p)
-                            * (std::log( p ) / std::log( 2.0 ));
+                    entropy += - (p)*(std::log( p ));
+//                    entropy += - (p)
+//                            * (std::log( p ) / std::log( 2.0 ));
                 }
             }
         }
 
         if (m_QValue != 1.0) {
-            outputIterator.Set((1.0 - entropy)/(m_QValue - 1.0));
+            outputIterator.Set(((1.0 - entropy)/(m_QValue - 1.0)));
+//            outputIterator.Set(((1.0 - entropy)/(m_QValue - 1.0))/maxEntropy);
         }else{
             outputIterator.Set(entropy);
+//            outputIterator.Set(entropy/maxEntropy);
         }
+
 
         ++diffIt;
         ++outputIterator;
