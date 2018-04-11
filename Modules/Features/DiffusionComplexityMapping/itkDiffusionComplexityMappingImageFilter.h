@@ -78,9 +78,6 @@ public:
     itkBooleanMacro(DebugMode)
     itkSetMacro(DebugMode, bool)
 
-    /** Set the number of possible states that are used in the entropy calculation. */
-    itkSetMacro(NumberOfStatesFunction, unsigned char)
-
     /** Set the disequilibrium function used in the complexity calculation. */
     itkSetMacro(DisequilibriumFunction, unsigned char)
 
@@ -96,12 +93,6 @@ public:
     itkConceptMacro( SameDimensionCheck,
                      ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
 #endif
-
-    enum BinsEstimate {
-        SQUAREROOT=1,
-        STURGES=2,
-        RICE=3
-    };
 
     enum DisequilibriumFunction {
         EUCLIDEAN=1,
@@ -121,18 +112,16 @@ protected:
 private:
     DiffusionComplexityMappingImageFilter(const Self &); //purposely not implemented
     void operator=(const Self &);  //purposely not implemented
-    unsigned int automaticHistogramBinCalculation(unsigned int n);
     void createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList);
-    void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum, OutputPixelType& numberOfVoxels);
+    void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum);
     void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradients, unsigned int b0);
-    void createPriorProbabilityDistribution(typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
-    void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
-    void calculatesDisequilibriumMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
+    void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min);
+    void calculatesDisequilibriumMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min);
 
     float m_QValue;
     unsigned int m_HistogramBins;
     bool m_UseManualNumberOfBins, m_DebugMode;
-    unsigned char m_NumberOfStatesFunction, m_DisequilibriumFunction;
+    unsigned char m_DisequilibriumFunction;
 };
 
 } // end namespace itk
