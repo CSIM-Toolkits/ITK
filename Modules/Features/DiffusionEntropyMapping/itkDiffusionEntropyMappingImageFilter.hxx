@@ -204,7 +204,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
 
     createDiffusionWeightedValues(diffusionAcquisitionImage, diffusionImage, numberOfGradientImages, b0);
 
-    //Finding input minimum and maximum values only on the gradient volumes and also construct the global probability distribution
+//    //Finding input minimum and maximum values only on the gradient volumes and also construct the global probability distribution
     OutputPixelType minimumInputValue = NumericTraits<OutputPixelType>::max();
     OutputPixelType maximumInputValue = NumericTraits<OutputPixelType>::min();
     getSpaceMaximumMinimumDiffusion(diffusionImage, usedMaskSpace, maximumInputValue, minimumInputValue);

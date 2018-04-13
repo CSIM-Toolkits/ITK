@@ -236,7 +236,7 @@ DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
             cout<<"Manual number of bins: "<<m_HistogramBins<<endl;
         }
     }else{
-        m_HistogramBins = numberOfGradientImages;
+        m_HistogramBins = 2.0*numberOfGradientImages;
         if (m_DebugMode) {
             cout<<"Automatic number of bins: "<<m_HistogramBins<<endl;
         }
@@ -567,11 +567,11 @@ DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
         ++maskIterator;
     }
 
-        typedef itk::ImageFileWriter<OutputImageType> WriterType;
-        typename WriterType::Pointer w = WriterType::New();
-        w->SetInput(output);
-        w->SetFileName("/home/antonio/Downloads/DiffusionEntropyMappingImageFilter/disequilibrium.nii.gz");
-        w->Update();
+//        typedef itk::ImageFileWriter<OutputImageType> WriterType;
+//        typename WriterType::Pointer w = WriterType::New();
+//        w->SetInput(output);
+//        w->SetFileName("/home/antonio/Downloads/DiffusionEntropyMappingImageFilter/disequilibrium.nii.gz");
+//        w->Update();
 }
 
 
