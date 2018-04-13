@@ -76,10 +76,8 @@ DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
     OutputImageType *output = this->GetOutput();
     output->CopyInformation(this->GetDWIImage());
     output->SetRegions(this->GetDWIImage()->GetRequestedRegion());
-    //    output->SetNumberOfComponentsPerPixel( 1 );
 
     output->Allocate();
-    //    output->FillBuffer(0);
 }
 
 template< typename TInput, typename TOutput, typename TMask >
@@ -204,7 +202,13 @@ DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
     diffusionImage->SetVectorLength( numberOfGradientImages );
     diffusionImage->Allocate();
 
-    typename InputImageType::Pointer nonDiffImage = InputImageType::New();
+    typename InputImageType::Pointer filteredDiffusions = InputImageType::New();
+    filteredDiffusions->CopyInformation(input);
+    filteredDiffusions->SetRegions(input->GetRequestedRegion());
+    filteredDiffusions->SetVectorLength( numberOfGradientImages );
+    filteredDiffusions->Allocate();
+
+    typename OutputImageType::Pointer nonDiffImage = OutputImageType::New();
     nonDiffImage->CopyInformation(input);
     nonDiffImage->SetRegions(input->GetRequestedRegion());
     nonDiffImage->SetVectorLength( 1 );
@@ -220,9 +224,9 @@ DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
         std::cout << "Image SNR="<< SNR << std::endl;
     }
 
-    attenuateDWINoise(output, diffusionImage, usedMaskSpace, SNR, numberOfGradientImages);
+    attenuateDWINoise(filteredDiffusions, diffusionImage, usedMaskSpace, SNR, numberOfGradientImages);
 
-    createFilteredDiffusionAcquisition(output, diffusionImage, nonDiffImage, b0);
+    createFilteredDiffusionAcquisition(output, filteredDiffusions, nonDiffImage, b0);
 }
 
 template< typename TInput, typename TOutput, typename TMask >
@@ -326,24 +330,27 @@ DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
 template< typename TInput, typename TOutput, typename TMask >
 void
 DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
-::createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, typename InputImageType::Pointer nonDiffImg, unsigned int numberOfGradientImages, unsigned int b0)
+::createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, typename OutputImageType::Pointer nonDiffImg, unsigned int numberOfGradientImages, unsigned int b0)
 {
     typedef itk::ImageRegionIterator<InputImageType>        InputRegionIteratorType;
-    InputRegionIteratorType    rawDiffIt(diffAcquitions, diffAcquitions->GetRequestedRegion());
-    InputRegionIteratorType    diffIt(diffImg, diffImg->GetRequestedRegion());
-    InputRegionIteratorType    nonDiffIt(nonDiffImg, nonDiffImg->GetRequestedRegion());
+    typedef itk::ImageRegionIterator<OutputImageType>        OutputRegionIteratorType;
+    InputRegionIteratorType     rawDiffIt(diffAcquitions, diffAcquitions->GetRequestedRegion());
+    InputRegionIteratorType     diffIt(diffImg, diffImg->GetRequestedRegion());
+    OutputRegionIteratorType    nonDiffIt(nonDiffImg, nonDiffImg->GetRequestedRegion());
 
     typedef itk::VariableLengthVector<double> DiffusionVectorType;
+    typedef itk::VariableLengthVector<unsigned short>  NonDiffusionVectorType;
 
     diffIt.GoToBegin();
     nonDiffIt.GoToBegin();
     rawDiffIt.GoToBegin();
     while (!rawDiffIt.IsAtEnd()) {
-        DiffusionVectorType       diffValues, nonDiffValues;
+        DiffusionVectorType     diffValues;
+        NonDiffusionVectorType  nonDiffValues;
         diffValues.SetSize(numberOfGradientImages);
         nonDiffValues.SetSize(1);
 
-        nonDiffValues[0]=rawDiffIt.Get()[0];
+        nonDiffValues[0]=static_cast<unsigned short>(rawDiffIt.Get()[0]);
 
         unsigned int index=0;
         for (unsigned int n = 1; n < diffAcquitions->GetNumberOfComponentsPerPixel(); ++n) {
@@ -366,13 +373,12 @@ DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
 template< typename TInput, typename TOutput, typename TMask >
 void
 DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
-::attenuateDWINoise(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, double SNR, unsigned int numberOfGradients)
+::attenuateDWINoise(typename InputImageType::Pointer filteredDiffusions, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, double SNR, unsigned int numberOfGradients)
 {
     typedef itk::ImageRegionIterator<InputImageType>        InputRegionIteratorType;
-    typedef itk::ImageRegionIterator<OutputImageType>       OutputRegionIteratorType;
     typedef itk::ImageRegionIterator<MaskImageType>         MaskRegionIteratorType;
     InputRegionIteratorType     diffIt(diffImg, diffImg->GetRequestedRegion());
-    OutputRegionIteratorType    outputIterator(output, output->GetRequestedRegion());
+    InputRegionIteratorType    outputIterator(filteredDiffusions, filteredDiffusions->GetRequestedRegion());
     MaskRegionIteratorType      maskIterator(mask, mask->GetRequestedRegion());
 
     typedef itk::VariableLengthVector<double> DiffusionVectorType;
@@ -397,12 +403,12 @@ DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
             DiffusionVectorType diffVoxelValues;
             diffVoxelValues.SetSize(numberOfGradients + 1);
             double sigma_i = mean_i/SNR;
+             double alpha = log((1.0-m_MaximumProportion)/m_MaximumProportion)/(m_Kappa*sigma_i);
+             double beta = m_Kappa*sigma_i;
             for (int j = 0; j < diffImg->GetNumberOfComponentsPerPixel(); ++j) {
                 double dev=diffIt.Get()[j]-mean_i;
-                double alpha = (m_Kappa*sigma_i)/log((1.0-m_MaximumProportion)/m_MaximumProportion);
-                double beta = m_Kappa*sigma_i;
                 double p = sigmoid(abs(dev),alpha,beta);
-                diffVoxelValues[j]=p*diffIt.Get()[j];
+                diffVoxelValues[j]=diffIt.Get()[j] - p*dev;
             }
             outputIterator.Set(diffVoxelValues);
         }
@@ -416,15 +422,15 @@ DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
 template< typename TInput, typename TOutput, typename TMask >
 void
 DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
-::createFilteredDiffusionAcquisition(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename InputImageType::Pointer nonDiffImg, unsigned int b0)
+::createFilteredDiffusionAcquisition(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename OutputImageType::Pointer nonDiffImg, unsigned int b0)
 {
     typedef itk::ImageRegionIterator<InputImageType>        InputRegionIteratorType;
     typedef itk::ImageRegionIterator<OutputImageType>       OutputRegionIteratorType;
     InputRegionIteratorType     diffIt(diffImg, diffImg->GetRequestedRegion());
-    InputRegionIteratorType     nonDiffIt(nonDiffImg, nonDiffImg->GetRequestedRegion());
+    OutputRegionIteratorType    nonDiffIt(nonDiffImg, nonDiffImg->GetRequestedRegion());
     OutputRegionIteratorType    outputIterator(output, output->GetRequestedRegion());
 
-    typedef itk::VariableLengthVector<double> DiffusionVectorType;
+    typedef itk::VariableLengthVector<unsigned short> DiffusionVectorType;
     unsigned int numberOfImages = diffImg->GetNumberOfComponentsPerPixel() + 1;
     diffIt.GoToBegin();
     nonDiffIt.GoToBegin();
@@ -435,9 +441,9 @@ DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
         diffValues.SetSize(numberOfImages);
         for (int i = 0; i < numberOfImages; ++i) {
             if (i==0) {
-                diffValues[i] = nonDiffIt.Get()[0];
+                diffValues[i] = static_cast<unsigned short>(nonDiffIt.Get()[0]);
             }else{
-                diffValues[i] = nonDiffIt.Get()[0]*exp(-static_cast<double>(b0)*diffIt.Get()[i]);
+                diffValues[i] = static_cast<unsigned short>(static_cast<double>(nonDiffIt.Get()[0])*exp(-static_cast<double>(b0)*diffIt.Get()[i-1]));
             }
         }
         outputIterator.Set(diffValues);
@@ -453,7 +459,7 @@ template< typename TInput, typename TOutput, typename TMask >
 double
 DiffusionParametricLogisticImageFilter< TInput, TOutput, TMask >
 ::sigmoid(double x, double alpha, double beta) {
-    return 1/(1+std::exp((x-beta)/alpha));
+    return 1/(1+std::exp(-alpha*(x-beta)));
 }
 
 

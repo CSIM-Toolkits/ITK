@@ -28,7 +28,7 @@
 namespace itk
 {
 
-template< typename TInputImage, typename TOutputImage, typename TInputMask=Image<unsigned char, 3> >
+template< typename TInputImage, typename TOutputImage=VectorImage<unsigned short, TInputImage::ImageDimension>, typename TInputMask=Image<unsigned char, 3> >
 class ITK_EXPORT DiffusionParametricLogisticImageFilter:
         public ImageToImageFilter< TInputImage, TOutputImage >
 {
@@ -98,10 +98,10 @@ private:
     DiffusionParametricLogisticImageFilter(const Self &); //purposely not implemented
     void operator=(const Self &);  //purposely not implemented
     void createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList);
-    void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, typename InputImageType::Pointer nonDiffImg, unsigned int numberOfGradients, unsigned int b0);
+    void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, typename OutputImageType::Pointer nonDiffImg, unsigned int numberOfGradients, unsigned int b0);
     void estimateImageSignalToNoiseRatio(typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, double& SNR);
-    void attenuateDWINoise(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, double SNR, unsigned int numberOfGradients);
-    void createFilteredDiffusionAcquisition(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename InputImageType::Pointer nonDiffImg, unsigned int b0);
+    void attenuateDWINoise(typename InputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, double SNR, unsigned int numberOfGradients);
+    void createFilteredDiffusionAcquisition(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename OutputImageType::Pointer nonDiffImg, unsigned int b0);
     double sigmoid(double x, double alpha, double beta);
     double m_Kappa, m_MaximumProportion;
     bool m_DebugMode;
