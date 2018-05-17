@@ -102,7 +102,7 @@ SampEn2DImageCalculator< TInputImage >
     size_t yLim = m_Ny - m_M*m_D; //row
 
     //Counters of similar patterns for m and m+1 respectively
-    unsigned long long B, A;   
+    unsigned long long B=0, A=0;
     
     // Total number of comparisons (paired patterns)
     N=0; 
@@ -140,11 +140,11 @@ SampEn2DImageCalculator< TInputImage >
     }
     k=0;
     for (i = 0; i <= m_M; i++) {  // fill row m+1      
-        s_mm1[k] = s_m1[k] = (m_Nx*m_M +i) * m_D;
+        s_mm1[n_m+k] = s_m1[k] = (m_Nx*m_M +i) * m_D;
         k++;
     }
     for (j = 0; j < m_M; j++) {  // fill col m+1
-        s_mm1[k] = s_m1[k] = (m_Nx*j + m_M) * m_D;
+        s_mm1[n_m+k] = s_m1[k] = (m_Nx*j + m_M) * m_D;
         k++;
     }
     // End pre-allocating
@@ -167,9 +167,10 @@ SampEn2DImageCalculator< TInputImage >
         
         while (p1 < p1lim) {
             // Check if pattern has any bg pixel
+            NV[p1]=false;
             for (k=0; k < n_mm1; k++) {
                 if(image_matrix[p1+s_mm1[k]] <= m_BGV) {
-                    NV[p1]=1;
+                    NV[p1]=true;
                     break; 
                 }
             }
@@ -214,7 +215,7 @@ SampEn2DImageCalculator< TInputImage >
                             }
 
                             //increment number of paired patterns
-                            *N++;
+                            N++;
 
                             //pattern matching for m with tolerance r
                             for (k=0; k < n_m; k++) {
@@ -260,11 +261,10 @@ SampEn2DImageCalculator< TInputImage >
 
     /* Average probabilities Um and Um+1 may be obtained
        dividing B and A by N, respectively. */
-
     
     free(s_m);
     free(s_m1);
-    free(s_m);
+    free(s_mm1);
 
     m_Entropy = static_cast<double>(-1)*std::log(static_cast<double>(A)/static_cast<double>(B));
 }
