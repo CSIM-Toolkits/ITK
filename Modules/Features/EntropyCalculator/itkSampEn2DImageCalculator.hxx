@@ -36,7 +36,8 @@ SampEn2DImageCalculator< TInputImage >
     m_M = 1;
     m_R = 0.10;
     m_D = 1;
-    m_BGV = 0.0;
+    m_BGV = NAN;
+    m_UseRParameterAsPercentage=true;
     m_RegionSetByUser = false;
 }
 
@@ -65,37 +66,63 @@ SampEn2DImageCalculator< TInputImage >
 
     double image_matrix[m_Nx*m_Ny];
 
-    //Calculating stantard deviation only in the foreground area
-    unsigned long long N = 0;
-    double sigma = 0.0, mean = 0.0;
-    ConstRegionIteratorType    copyIt(m_Image, m_Region);
-
-    copyIt.GoToBegin(); // mean
-    int count=0;
-    while (!copyIt.IsAtEnd()) {
-        image_matrix[count++]=copyIt.Get();
-
-        if (copyIt.Get()>m_BGV) {
-            N++;
-            mean+=copyIt.Get();
-        }
-        ++copyIt;
-    }
-    mean/=N;
-
-    copyIt.GoToBegin(); // std
-    while (!copyIt.IsAtEnd()) {
-        if (copyIt.Get()>m_BGV) {
-            sigma+=pow(copyIt.Get()-mean,2.0);
-        }
-        ++copyIt;
-    }
-    sigma/=(N-1);
-    sigma=sqrt(sigma);
-    //End standard deviation
+    unsigned long long N;
 
     //Assigning tolerance factor
-    DoublePixelType tolerance = m_R*sigma;
+    DoublePixelType tolerance;
+
+    if(m_UseRParameterAsPercentage) {
+        double sigma = 0.0, mean = 0.0;
+        ConstRegionIteratorType    copyIt(m_Image, m_Region);
+        copyIt.GoToBegin(); // mean
+        int count=0;
+        N=0;
+
+        //Calculating stantard deviation
+        if(isnan(m_BGV)) { //whole image
+            while (!copyIt.IsAtEnd()) {
+                image_matrix[count++]=copyIt.Get();
+                N++;
+                mean+=copyIt.Get();
+                ++copyIt;
+            }
+            mean/=N;
+
+            copyIt.GoToBegin(); // std
+            while (!copyIt.IsAtEnd()) {
+                sigma+=pow(copyIt.Get()-mean,2.0);
+                ++copyIt;
+            }
+        } else {
+            //Only in the foreground area
+            while (!copyIt.IsAtEnd()) {
+                image_matrix[count++]=copyIt.Get();
+
+                if (copyIt.Get()>m_BGV) {
+                    N++;
+                    mean+=copyIt.Get();
+                }
+                ++copyIt;
+            }
+            mean/=N;
+
+            copyIt.GoToBegin(); // std
+            while (!copyIt.IsAtEnd()) {
+                if (copyIt.Get()>m_BGV) {
+                    sigma+=pow(copyIt.Get()-mean,2.0);
+                }
+                ++copyIt;
+            }
+        }
+
+        sigma/=(N-1);
+        sigma=sqrt(sigma);
+        //End standard deviation
+
+        tolerance = m_R*sigma;
+    } else {
+        tolerance = m_R;
+    }
 
     // Limit indexes
     size_t xLim = m_Nx - m_M*m_D; //col
@@ -160,21 +187,27 @@ SampEn2DImageCalculator< TInputImage >
     bool NV[m_Nx*m_Ny];
 
     // Checking background
-    for (j1 = 0; j1 < yLim; j1++) { // for each row
-        p1lim = (j1*m_Nx)+m_Nx-(m_M*m_D); //set limit index for pattern index
-        
-        p1 = j1*m_Nx; //p1 is the pattern index
-        
-        while (p1 < p1lim) {
-            // Check if pattern has any bg pixel
-            NV[p1]=false;
-            for (k=0; k < n_mm1; k++) {
-                if(image_matrix[p1+s_mm1[k]] <= m_BGV) {
-                    NV[p1]=true;
-                    break; 
+    if(isnan(m_BGV)) {
+        for (j1 = 0; j1 < m_Nx*m_Ny; j1++) {
+            NV[j1]=false;
+        }
+    } else {
+        for (j1 = 0; j1 < yLim; j1++) { // for each row
+            p1lim = (j1*m_Nx)+m_Nx-(m_M*m_D); //set limit index for pattern index
+
+            p1 = j1*m_Nx; //p1 is the pattern index
+
+            while (p1 < p1lim) {
+                // Check if pattern has any bg pixel
+                NV[p1]=false;
+                for (k=0; k < n_mm1; k++) {
+                    if(image_matrix[p1+s_mm1[k]] <= m_BGV) {
+                        NV[p1]=true;
+                        break;
+                    }
                 }
+                p1++;
             }
-            p1++;
         }
     }
     // End background checking
