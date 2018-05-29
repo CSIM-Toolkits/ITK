@@ -45,9 +45,9 @@ public:
 
     /** Type definition for the output image entropy value. This is the type which the image will be cast. */
     typedef std::vector<double> EntropyVectorType;
+    typedef bool RFlagType;
     typedef double RParameterValueType;
     typedef unsigned int MParameterValueType;
-    typedef unsigned int DParameterValueType;
     typedef unsigned int SParameterValueType;
     typedef double BParameterValueType;
     typedef ImageRegionConstIterator<TInputImage>       ConstRegionIteratorType;
@@ -80,14 +80,15 @@ public:
     /** Set the input image. */
     itkSetConstObjectMacro(Image, ImageType);
 
+    /** Set the RParameterAsPercentage parameter value. */
+    itkSetMacro(UseRParameterAsPercentage, RFlagType)
+    itkBooleanMacro(UseRParameterAsPercentage)
+
     /** Set the M parameter value. */
     itkSetMacro(M, MParameterValueType);
 
     /** Set the R parameter value. */
     itkSetMacro(R, RParameterValueType);
-
-    /** Set the D (delay) parameter value. */
-    itkSetMacro(D, DParameterValueType);
 
     /** Set the S (scale) parameter value. */
     itkSetMacro(S, SParameterValueType);
@@ -100,9 +101,6 @@ public:
 
     /** Get the R parameter value. */
     itkGetMacro(R, RParameterValueType);
-
-    /** Get the D parameter value. */
-    itkGetMacro(D, DParameterValueType);
 
     /** Get the S parameter value. */
     itkGetMacro(S, SParameterValueType);
@@ -130,10 +128,10 @@ private:
     ModifiedMultiscaleEntropy2DImageCalculator(const Self &); //purposely not implemented
     void operator=(const Self &);                //purposely not implemented
 
-    EntropyVectorType     m_Entropy;
+    RFlagType           m_UseRParameterAsPercentage;
+    EntropyVectorType   m_Entropy;
     MParameterValueType m_M;
     RParameterValueType m_R;
-    DParameterValueType m_D;
     SParameterValueType m_S;
     BParameterValueType m_BGV;
     ImageConstPointer   m_Image;
