@@ -19,6 +19,11 @@
 #define __itkModifiedMultiscaleEntropy2DImageCalculator_hxx
 
 #include "itkModifiedMultiscaleEntropy2DImageCalculator.h"
+#include "itkSampEn2DImageCalculator.h"
+#include "itkImageRegionIterator.h"
+#include "itkConstNeighborhoodIterator.h"
+
+#include "itkImageFileWriter.h"
 
 using namespace std;
 
@@ -32,7 +37,7 @@ ModifiedMultiscaleEntropy2DImageCalculator< TInputImage >
 ::ModifiedMultiscaleEntropy2DImageCalculator()
 {
     m_Image = TInputImage::New();
-    m_Entropy.clear();
+    //    m_Entropy.clear();
     m_M = 1;
     m_R = 0.10;
     m_S = 10;
@@ -75,7 +80,7 @@ ModifiedMultiscaleEntropy2DImageCalculator< TInputImage >
         ConstRegionIteratorType    copyIt(m_Image, m_Region);
         copyIt.GoToBegin(); // mean
         int count=0;
-        N=0;
+        double N=0;
 
         //Calculating stantard deviation
         if(isnan(m_BGV)) { //whole image
@@ -124,39 +129,89 @@ ModifiedMultiscaleEntropy2DImageCalculator< TInputImage >
     }
 
     //Call SampeEn2D for S=1
-    // . . . . .
+    typedef itk::SampEn2DImageCalculator<TInputImage> SampEn2DType;
+    typename SampEn2DType::Pointer sampEn2D = SampEn2DType::New();
+    sampEn2D->UseRParameterAsPercentageOff();
+    sampEn2D->SetImage(m_Image);
+    sampEn2D->SetM(m_M);
+    sampEn2D->SetR(tolerance);
+    sampEn2D->SetD(1);
+    sampEn2D->SetBGV(m_BGV);
+    sampEn2D->ComputeEntropy();
+
+    m_Entropy.push_back(sampEn2D->GetEntropy());
 
     //Loop for remaining S
+    typedef itk::Image<double, InputImageDimension> ScaledImageType;
+    typedef itk::SampEn2DImageCalculator<ScaledImageType> ScaledSampEn2DType;
+    typename ScaledSampEn2DType::Pointer scaledSampEn2D = ScaledSampEn2DType::New();
+    scaledSampEn2D->UseRParameterAsPercentageOff();
+    scaledSampEn2D->SetM(m_M);
+    scaledSampEn2D->SetR(tolerance);
+    scaledSampEn2D->SetBGV(m_BGV);
+
     int nPixels, s, i, j, si, sj, w, h;
     double sum;
-    for(s=2; s<=m_S; s++) {}
+    for(s=2; s<=m_S; s++) {
+        //Coarse-grain - ITK
+        typename ScaledImageType::Pointer scaledImage = ScaledImageType::New();
+        typename ImageType::SizeType scaledSize;
+        scaledSize[0] = m_Nx - s + 1; //ncols
+        scaledSize[1] = m_Ny - s + 1; //nrows
+
+        typename TInputImage::RegionType scaledRegion;
+        scaledRegion.SetSize(scaledSize);
+        scaledRegion.SetIndex(m_Region.GetIndex());
+
+        scaledImage->SetRegions(scaledRegion);
+        scaledImage->Allocate();
 
         // Coarse-grain
         w = m_Nx-s+1;
         h = m_Ny-s+1;
         nPixels = s*s;
 
-        double cg_image[w*h];
-
-        for (i=0; i < w; i++) {
-            for (j=0; j < h; j++) {
+        double cg_image[w*h], checkBGV;
+        bool calculateCG=true;
+        for (i=0; i < h; i++) {
+            for (j=0; j < w; j++) {
                 sum = 0.0;
 
                 for (si=0; si < s; si++) {
                     for (sj=0; sj < s; sj++) {
-                        sum += image_matrix[(i + si)*m_Ny+(j + sj)];
+                        checkBGV=image_matrix[(i + si)*m_Nx+(j + sj)];
+                        if (checkBGV>m_BGV) {
+                            sum += checkBGV;
+                        }else{
+                            cg_image[i*w+j] = m_BGV;
+                            sj=s;
+                            si=s;
+                            calculateCG=false;
+                            break;
+                        }
                     } // for si
                 } // for sj
 
-               cg_image[i*h+j] = sum/nPixels;
+                cg_image[i*w+j] = (calculateCG)?sum/nPixels:m_BGV;
+                calculateCG=true;
             } // for j
         } // for i
 
+        typedef itk::ImageRegionIterator<ScaledImageType>   ImageRegionIteratorType;
+        ImageRegionIteratorType scaledIt(scaledImage, scaledImage->GetRequestedRegion());
+        scaledIt.GoToBegin();
+        int count=0;
+        while (!scaledIt.IsAtEnd()) {
+            scaledIt.Set(cg_image[count++]);
+            ++scaledIt;
+        }
 
         // SamplEn2D
-        // . . . . .
+        scaledSampEn2D->SetD(s);
+        scaledSampEn2D->SetImage(scaledImage);
+        scaledSampEn2D->ComputeEntropy();
+        m_Entropy.push_back(scaledSampEn2D->GetEntropy());
     }
-
 }
 
 
@@ -202,7 +257,7 @@ ModifiedMultiscaleEntropy2DImageCalculator< TInputImage >
                          << "S must be an integer positive value.");
     }
 
-//TODO -- B must be double
+    //TODO -- B must be double
     // if (m_BGV < 0)
     // {
     //     itkWarningMacro( << "Wrong value for B parameters: "

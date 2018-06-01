@@ -70,13 +70,13 @@ SampEn2DImageCalculator< TInputImage >
 
     //Assigning tolerance factor
     DoublePixelType tolerance;
+    ConstRegionIteratorType    copyIt(m_Image, m_Region);
 
+    int count=0;
     if(m_UseRParameterAsPercentage) {
         double sigma = 0.0, mean = 0.0;
-        ConstRegionIteratorType    copyIt(m_Image, m_Region);
-        copyIt.GoToBegin(); // mean
-        int count=0;
         N=0;
+        copyIt.GoToBegin(); // mean
 
         //Calculating stantard deviation
         if(isnan(m_BGV)) { //whole image
@@ -121,6 +121,11 @@ SampEn2DImageCalculator< TInputImage >
 
         tolerance = m_R*sigma;
     } else {
+        copyIt.GoToBegin();
+        while (!copyIt.IsAtEnd()) {
+            image_matrix[count++]=copyIt.Get();
+            ++copyIt;
+        }
         tolerance = m_R;
     }
 
