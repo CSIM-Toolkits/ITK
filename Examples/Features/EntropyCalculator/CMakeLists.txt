@@ -6,7 +6,7 @@ endif()
 
 
 # This project is designed to be built outside the Insight source tree.
-project(ModifiedMultiscaleEntropy2DImageCalculator)
+project(Entropy2DImageCalculator)
 
 # Find ITK.
 find_package(ITK REQUIRED)
@@ -17,7 +17,7 @@ IF(ITK_FOUND)
             "Cannot build InsightApplications without ITK.  Please set ITK_DIR.")
   ENDIF(ITK_FOUND)
 
-add_executable(ModifiedMultiscaleEntropy2DImageCalculator
+add_executable(Entropy2DImageCalculator
 Main.cpp
 itkModifiedMultiscaleEntropy2DImageCalculator.h
 itkModifiedMultiscaleEntropy2DImageCalculator.hxx
@@ -26,4 +26,4 @@ itkSampEn2DImageCalculator.hxx
 )
 
 
-target_link_libraries(ModifiedMultiscaleEntropy2DImageCalculator ${ITK_LIBRARIES} )
+target_link_libraries(Entropy2DImageCalculator ${ITK_LIBRARIES} )

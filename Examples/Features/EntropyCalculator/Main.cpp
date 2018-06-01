@@ -15,7 +15,9 @@ int main(int argc, char *argv[])
           std::cerr << "Missing parameters. " << std::endl;
           std::cerr << "Usage: " << std::endl;
           std::cerr << argv[0]
-                    << " inputImageFile M R D BGV"
+                    << " inputImageFile M R S BGV"
+                    << std::endl;
+          std::cerr << "    NOTE: The S parameter is assumed as the D values for the SampEn2D method."
                     << std::endl;
           return -1;
         }
@@ -59,11 +61,13 @@ int main(int argc, char *argv[])
     mmse2D->SetImage(reader->GetOutput());
     mmse2D->SetM(atoi(argv[2]));
     mmse2D->SetR(atof(argv[3]));
-    mmse2D->SetD(atoi(argv[4]));
+    mmse2D->SetS(atoi(argv[4]));
     mmse2D->SetBGV(atof(argv[5]));
     mmse2D->ComputeEntropy();
 
-    cout<<"MMSE2D: "<<mmse2D->GetEntropy().data()<<endl;
+    for (int var = 0; var < atoi(argv[4]); ++var) {
+        cout<<"Scale S="<<(var+1)<<" -> MMSE2D: "<<mmse2D->GetEntropy()[var]<<endl;
+    }
 
   return EXIT_SUCCESS;
 }
