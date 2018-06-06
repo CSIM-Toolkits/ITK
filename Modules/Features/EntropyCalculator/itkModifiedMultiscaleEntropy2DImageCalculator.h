@@ -1,5 +1,5 @@
-#ifndef __itkSampEn2DImageCalculator_h
-#define __itkSampEn2DImageCalculator_h
+#ifndef __itkModifiedMultiscaleEntropy2DImageCalculator_h
+#define __itkModifiedMultiscaleEntropy2DImageCalculator_h
 
 #include "itkObject.h"
 #include "itkObjectFactory.h"
@@ -13,7 +13,7 @@
 
 namespace itk
 {
-/** \class SampEn2DImageCalculator
+/** \class ModifiedMultiscaleEntropy2DImageCalculator
  *  \brief Computes the minimum and the maximum intensity values of
  *         an image.
  *
@@ -31,23 +31,24 @@ namespace itk
  * \endwiki
  */
 template< typename TInputImage >
-class SampEn2DImageCalculator:public Object
+class ModifiedMultiscaleEntropy2DImageCalculator:public Object
 {
 public:
     itkStaticConstMacro(InputImageDimension, unsigned int,
                         TInputImage::ImageDimension);
 
     /** Standard class typedefs. */
-    typedef SampEn2DImageCalculator Self;
+    typedef ModifiedMultiscaleEntropy2DImageCalculator Self;
     typedef Object                        Superclass;
     typedef SmartPointer< Self >          Pointer;
     typedef SmartPointer< const Self >    ConstPointer;
 
     /** Type definition for the output image entropy value. This is the type which the image will be cast. */
-    typedef double DoublePixelType;
-    typedef unsigned int MParameterValueType;
+    typedef std::vector<double> EntropyVectorType;
+    typedef bool RFlagType;
     typedef double RParameterValueType;
-    typedef unsigned int DParameterValueType;
+    typedef unsigned int MParameterValueType;
+    typedef unsigned int SParameterValueType;
     typedef double BParameterValueType;
     typedef ImageRegionConstIterator<TInputImage>       ConstRegionIteratorType;
 
@@ -55,7 +56,7 @@ public:
     itkNewMacro(Self);
 
     /** Run-time type information (and related methods). */
-    itkTypeMacro(SampEn2DImageCalculator, Object);
+    itkTypeMacro(ModifiedMultiscaleEntropy2DImageCalculator, Object);
 
     /** Type definition for the input image. */
     typedef TInputImage ImageType;
@@ -79,17 +80,21 @@ public:
     /** Set the input image. */
     itkSetConstObjectMacro(Image, ImageType);
 
+    /** Set the RParameterAsPercentage parameter value. */
+    itkSetMacro(UseRParameterAsPercentage, RFlagType)
+    itkBooleanMacro(UseRParameterAsPercentage)
+
     /** Set the M parameter value. */
     itkSetMacro(M, MParameterValueType);
 
     /** Set the R parameter value. */
     itkSetMacro(R, RParameterValueType);
 
-    /** Set the D (delay) parameter value. */
-    itkSetMacro(D, DParameterValueType);
+    /** Set the S (scale) parameter value. */
+    itkSetMacro(S, SParameterValueType);
 
     /** Set the B (background value) parameter value. */
-    itkSetMacro(BackgroundValue, BParameterValueType);
+    itkSetMacro(BGV, BParameterValueType);
 
     /** Get the M parameter value. */
     itkGetMacro(M, MParameterValueType);
@@ -97,37 +102,38 @@ public:
     /** Get the R parameter value. */
     itkGetMacro(R, RParameterValueType);
 
-    /** Get the D parameter value. */
-    itkGetMacro(D, DParameterValueType);
+    /** Get the S parameter value. */
+    itkGetMacro(S, SParameterValueType);
 
     /** Get the B parameter value. */
-    itkGetMacro(BackgroundValue, BParameterValueType);
+    itkGetMacro(BGV, BParameterValueType);
 
     /** Compute the two-dimensional sample entropy value of the input image. */
     void ComputeEntropy(void);
 
     /** Return the entropy value. */
-    itkGetConstMacro(Entropy, DoublePixelType);
+    itkGetConstMacro(Entropy, EntropyVectorType);
 
     /** Set the region over which the values will be computed */
     void SetRegion(const RegionType & region);
 
 
 protected:
-    SampEn2DImageCalculator();
-    virtual ~SampEn2DImageCalculator() {}
+    ModifiedMultiscaleEntropy2DImageCalculator();
+    virtual ~ModifiedMultiscaleEntropy2DImageCalculator() {}
     virtual void PrintSelf(std::ostream & os, Indent indent) const ITK_OVERRIDE;
 
 
 private:
-    SampEn2DImageCalculator(const Self &); //purposely not implemented
+    ModifiedMultiscaleEntropy2DImageCalculator(const Self &); //purposely not implemented
     void operator=(const Self &);                //purposely not implemented
 
-    DoublePixelType     m_Entropy;
+    RFlagType           m_UseRParameterAsPercentage;
+    EntropyVectorType   m_Entropy;
     MParameterValueType m_M;
     RParameterValueType m_R;
-    DParameterValueType m_D;
-    BParameterValueType m_BackgroundValue;
+    SParameterValueType m_S;
+    BParameterValueType m_BGV;
     ImageConstPointer   m_Image;
 
     /** Test to check the M, R, D and B parameters values */
@@ -135,12 +141,12 @@ private:
 
     RegionType m_Region;
     bool       m_RegionSetByUser;
-    int        m_Nx,m_Ny;
+    size_t        m_Nx,m_Ny;
 };
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkSampEn2DImageCalculator.hxx"
+#include "itkModifiedMultiscaleEntropy2DImageCalculator.hxx"
 #endif
 
-#endif /* __itkSampEn2DImageCalculator_h */
+#endif /* __itkModifiedMultiscaleEntropy2DImageCalculator_h */

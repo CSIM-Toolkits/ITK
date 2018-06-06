@@ -13,8 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-#ifndef __itkDiffusionEntropyMappingImageFilter_h
-#define __itkDiffusionEntropyMappingImageFilter_h
+#ifndef __itkDiffusionParametricLogisticImageFilter_h
+#define __itkDiffusionParametricLogisticImageFilter_h
 #include "itkImageToImageFilter.h"
 #include "itkImage.h"
 #include "itkVectorImage.h"
@@ -28,8 +28,8 @@
 namespace itk
 {
 
-template< typename TInputImage, typename TOutputImage=Image<typename NumericTraits<typename TInputImage::ValueType>::ValueType, 3>, typename TInputMask=Image<unsigned char, 3> >
-class ITK_EXPORT DiffusionEntropyMappingImageFilter:
+template< typename TInputImage, typename TOutputImage=VectorImage<unsigned short, TInputImage::ImageDimension>, typename TInputMask=Image<unsigned char, 3> >
+class ITK_EXPORT DiffusionParametricLogisticImageFilter:
         public ImageToImageFilter< TInputImage, TOutputImage >
 {
 public:
@@ -45,7 +45,7 @@ public:
     typedef TInputMask      MaskImageType;
 
     /** Standard class typedefs. */
-    typedef DiffusionEntropyMappingImageFilter          Self;
+    typedef DiffusionParametricLogisticImageFilter          Self;
     typedef ImageToImageFilter< TInputImage, TOutputImage >       Superclass;
     typedef SmartPointer< Self >                                  Pointer;
     typedef SmartPointer< const Self >                            ConstPointer;
@@ -54,34 +54,29 @@ public:
     itkNewMacro(Self)
 
     /** Run-time type information (and related methods). */
-    itkTypeMacro(DiffusionEntropyMappingImageFilter, ImageToImageFilter)
+    itkTypeMacro(DiffusionParametricLogisticImageFilter, ImageToImageFilter)
 
     typedef typename InputImageType::PixelType                  InputPixelType;
     typedef typename OutputImageType::PixelType                 OutputPixelType;
     typedef typename MaskImageType::PixelType                   MaskPixelType;
-    typedef typename itk::Statistics::Histogram< OutputPixelType, itk::Statistics::DenseFrequencyContainer2 > HistogramType;
 
     void SetInputImage(const TInputImage* image);
     void SetDiffusionSpace(const TInputMask* mask);
 
-    /** Set the q value used in the entropy calculation. */
-    itkSetMacro(QValue, float)
-
-    /** Choose if define the number of bins manually. */
-    itkBooleanMacro(UseManualNumberOfBins)
-    itkSetMacro(UseManualNumberOfBins, bool)
-
-    /** Set the number of bins used in the entropy calculation. */
-    itkSetMacro(HistogramBins, unsigned int)
 
     /** Debug mode is used to inform some messages in the standard output. */
     itkBooleanMacro(DebugMode)
     itkSetMacro(DebugMode, bool)
 
-    itkGetMacro(QValue, float)
-    itkGetMacro(HistogramBins, unsigned int)
-    itkGetMacro(UseManualNumberOfBins, bool)
+    /** Set the kappa value that regularize the noise standard deviation threshold. */
+    itkSetMacro(Kappa, double)
+
+    /** Set the maximum proportion used in the noise attenuation process. The more close to 1.0, the more intense will be the filtering. */
+    itkSetMacro(MaximumProportion, double)
+
     itkGetMacro(DebugMode, bool)
+    itkGetMacro(Kappa, double)
+    itkGetMacro(MaximumProportion, double)
 
 #ifdef ITK_USE_CONCEPT_CHECKING
     // Begin concept checking
@@ -92,29 +87,30 @@ public:
 #endif
 
 protected:
-    DiffusionEntropyMappingImageFilter();
-    virtual ~DiffusionEntropyMappingImageFilter() {}
+    DiffusionParametricLogisticImageFilter();
+    virtual ~DiffusionParametricLogisticImageFilter() {}
     virtual void GenerateOutputInformation(void) ITK_OVERRIDE;
 
     typename TInputImage::ConstPointer GetDWIImage();
     typename TInputMask::ConstPointer GetDiffusionSpace();
     void GenerateData();
 private:
-    DiffusionEntropyMappingImageFilter(const Self &); //purposely not implemented
+    DiffusionParametricLogisticImageFilter(const Self &); //purposely not implemented
     void operator=(const Self &);  //purposely not implemented
     void createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList);
-    void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum);
-    void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradients, unsigned int b0);
-    void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min);
-    float m_QValue;
-    unsigned int m_HistogramBins;
-    bool m_UseManualNumberOfBins, m_DebugMode;
+    void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, typename OutputImageType::Pointer nonDiffImg, unsigned int numberOfGradients, unsigned int b0);
+    void estimateImageSignalToNoiseRatio(typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, double& SNR);
+    void attenuateDWINoise(typename InputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, double SNR, unsigned int numberOfGradients);
+    void createFilteredDiffusionAcquisition(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename OutputImageType::Pointer nonDiffImg, unsigned int b0);
+    double sigmoid(double x, double alpha, double beta);
+    double m_Kappa, m_MaximumProportion;
+    bool m_DebugMode;
 };
 
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDiffusionEntropyMappingImageFilter.hxx"
+#include "itkDiffusionParametricLogisticImageFilter.hxx"
 #endif
 
 #endif

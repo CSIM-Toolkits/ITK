@@ -13,8 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-#ifndef __itkDiffusionEntropyMappingImageFilter_h
-#define __itkDiffusionEntropyMappingImageFilter_h
+#ifndef __itkDiffusionComplexityMappingImageFilter_h
+#define __itkDiffusionComplexityMappingImageFilter_h
 #include "itkImageToImageFilter.h"
 #include "itkImage.h"
 #include "itkVectorImage.h"
@@ -29,7 +29,7 @@ namespace itk
 {
 
 template< typename TInputImage, typename TOutputImage=Image<typename NumericTraits<typename TInputImage::ValueType>::ValueType, 3>, typename TInputMask=Image<unsigned char, 3> >
-class ITK_EXPORT DiffusionEntropyMappingImageFilter:
+class ITK_EXPORT DiffusionComplexityMappingImageFilter:
         public ImageToImageFilter< TInputImage, TOutputImage >
 {
 public:
@@ -45,7 +45,7 @@ public:
     typedef TInputMask      MaskImageType;
 
     /** Standard class typedefs. */
-    typedef DiffusionEntropyMappingImageFilter          Self;
+    typedef DiffusionComplexityMappingImageFilter          Self;
     typedef ImageToImageFilter< TInputImage, TOutputImage >       Superclass;
     typedef SmartPointer< Self >                                  Pointer;
     typedef SmartPointer< const Self >                            ConstPointer;
@@ -54,7 +54,7 @@ public:
     itkNewMacro(Self)
 
     /** Run-time type information (and related methods). */
-    itkTypeMacro(DiffusionEntropyMappingImageFilter, ImageToImageFilter)
+    itkTypeMacro(DiffusionComplexityMappingImageFilter, ImageToImageFilter)
 
     typedef typename InputImageType::PixelType                  InputPixelType;
     typedef typename OutputImageType::PixelType                 OutputPixelType;
@@ -78,6 +78,9 @@ public:
     itkBooleanMacro(DebugMode)
     itkSetMacro(DebugMode, bool)
 
+    /** Set the disequilibrium function used in the complexity calculation. */
+    itkSetMacro(DisequilibriumFunction, unsigned char)
+
     itkGetMacro(QValue, float)
     itkGetMacro(HistogramBins, unsigned int)
     itkGetMacro(UseManualNumberOfBins, bool)
@@ -91,30 +94,40 @@ public:
                      ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
 #endif
 
+    enum DisequilibriumFunction {
+        EUCLIDEAN=1,
+        WOOTER=2,
+        KULLBACK_LEIBER=3,
+        JENSEN=4
+    };
+
 protected:
-    DiffusionEntropyMappingImageFilter();
-    virtual ~DiffusionEntropyMappingImageFilter() {}
+    DiffusionComplexityMappingImageFilter();
+    virtual ~DiffusionComplexityMappingImageFilter() {}
     virtual void GenerateOutputInformation(void) ITK_OVERRIDE;
 
     typename TInputImage::ConstPointer GetDWIImage();
     typename TInputMask::ConstPointer GetDiffusionSpace();
     void GenerateData();
 private:
-    DiffusionEntropyMappingImageFilter(const Self &); //purposely not implemented
+    DiffusionComplexityMappingImageFilter(const Self &); //purposely not implemented
     void operator=(const Self &);  //purposely not implemented
     void createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList);
     void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum);
     void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradients, unsigned int b0);
     void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min);
+    void calculatesDisequilibriumMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min);
+
     float m_QValue;
     unsigned int m_HistogramBins;
     bool m_UseManualNumberOfBins, m_DebugMode;
+    unsigned char m_DisequilibriumFunction;
 };
 
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDiffusionEntropyMappingImageFilter.hxx"
+#include "itkDiffusionComplexityMappingImageFilter.hxx"
 #endif
 
 #endif

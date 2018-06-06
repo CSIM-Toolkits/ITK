@@ -13,8 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-#ifndef __itkDiffusionEntropyMappingImageFilter_h
-#define __itkDiffusionEntropyMappingImageFilter_h
+#ifndef __itkDiffusionSelfInformationMappingImageFilter_h
+#define __itkDiffusionSelfInformationMappingImageFilter_h
 #include "itkImageToImageFilter.h"
 #include "itkImage.h"
 #include "itkVectorImage.h"
@@ -29,7 +29,7 @@ namespace itk
 {
 
 template< typename TInputImage, typename TOutputImage=Image<typename NumericTraits<typename TInputImage::ValueType>::ValueType, 3>, typename TInputMask=Image<unsigned char, 3> >
-class ITK_EXPORT DiffusionEntropyMappingImageFilter:
+class ITK_EXPORT DiffusionSelfInformationMappingImageFilter:
         public ImageToImageFilter< TInputImage, TOutputImage >
 {
 public:
@@ -45,7 +45,7 @@ public:
     typedef TInputMask      MaskImageType;
 
     /** Standard class typedefs. */
-    typedef DiffusionEntropyMappingImageFilter          Self;
+    typedef DiffusionSelfInformationMappingImageFilter          Self;
     typedef ImageToImageFilter< TInputImage, TOutputImage >       Superclass;
     typedef SmartPointer< Self >                                  Pointer;
     typedef SmartPointer< const Self >                            ConstPointer;
@@ -54,7 +54,7 @@ public:
     itkNewMacro(Self)
 
     /** Run-time type information (and related methods). */
-    itkTypeMacro(DiffusionEntropyMappingImageFilter, ImageToImageFilter)
+    itkTypeMacro(DiffusionSelfInformationMappingImageFilter, ImageToImageFilter)
 
     typedef typename InputImageType::PixelType                  InputPixelType;
     typedef typename OutputImageType::PixelType                 OutputPixelType;
@@ -91,21 +91,29 @@ public:
                      ( Concept::SameDimension< InputImageDimension, OutputImageDimension > ) );
 #endif
 
+    enum BinsEstimate {
+        SQUAREROOT=1,
+        STURGES=2,
+        RICE=3
+    };
+
 protected:
-    DiffusionEntropyMappingImageFilter();
-    virtual ~DiffusionEntropyMappingImageFilter() {}
+    DiffusionSelfInformationMappingImageFilter();
+    virtual ~DiffusionSelfInformationMappingImageFilter() {}
     virtual void GenerateOutputInformation(void) ITK_OVERRIDE;
 
     typename TInputImage::ConstPointer GetDWIImage();
     typename TInputMask::ConstPointer GetDiffusionSpace();
     void GenerateData();
 private:
-    DiffusionEntropyMappingImageFilter(const Self &); //purposely not implemented
+    DiffusionSelfInformationMappingImageFilter(const Self &); //purposely not implemented
     void operator=(const Self &);  //purposely not implemented
+    unsigned int automaticHistogramBinCalculation(unsigned int n);
     void createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList);
     void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum);
     void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradients, unsigned int b0);
-    void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min);
+    void createPriorProbabilityDistribution(typename InputImageType::Pointer diffImg, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
+    void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, typename HistogramType::Pointer prioryProbabilityDistribution, typename HistogramType::IndexType index, typename HistogramType::MeasurementVectorType mv);
     float m_QValue;
     unsigned int m_HistogramBins;
     bool m_UseManualNumberOfBins, m_DebugMode;
@@ -114,7 +122,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkDiffusionEntropyMappingImageFilter.hxx"
+#include "itkDiffusionSelfInformationMappingImageFilter.hxx"
 #endif
 
 #endif

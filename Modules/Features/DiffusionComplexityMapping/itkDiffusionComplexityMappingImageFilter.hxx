@@ -13,14 +13,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-#ifndef __itkDiffusionEntropyMappingImageFilter_hxx
-#define __itkDiffusionEntropyMappingImageFilter_hxx
-#include "itkDiffusionEntropyMappingImageFilter.h"
+#ifndef __itkDiffusionComplexityMappingImageFilter_hxx
+#define __itkDiffusionComplexityMappingImageFilter_hxx
+#include "itkDiffusionComplexityMappingImageFilter.h"
 
 #include <itkNrrdImageIO.h>
 #include <itkImageRegionIterator.h>
 #include <itkDiffusionTensor3DReconstructionImageFilter.h>
 #include <itkMetaDataObject.h>
+
+#include "itkImageFileWriter.h"
 
 #include <iostream>
 using namespace std;
@@ -28,32 +30,33 @@ using namespace std;
 namespace itk
 {
 template< typename TInput, typename TOutput, typename TMask >
-DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
-::DiffusionEntropyMappingImageFilter()
+DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
+::DiffusionComplexityMappingImageFilter()
 {
     m_QValue=1.0;
     m_HistogramBins=2;
     m_UseManualNumberOfBins=false;
+    m_DisequilibriumFunction=4;
     this->SetNumberOfRequiredInputs(1);
 }
 
 template< typename TInput, typename TOutput, typename TMask >
 void
-DiffusionEntropyMappingImageFilter<TInput, TOutput, TMask>::SetInputImage(const TInput* image)
+DiffusionComplexityMappingImageFilter<TInput, TOutput, TMask>::SetInputImage(const TInput* image)
 {
     this->SetNthInput(0, const_cast<TInput*>(image));
 }
 
 template< typename TInput, typename TOutput, typename TMask>
 void
-DiffusionEntropyMappingImageFilter<TInput, TOutput, TMask>::SetDiffusionSpace(const TMask* mask)
+DiffusionComplexityMappingImageFilter<TInput, TOutput, TMask>::SetDiffusionSpace(const TMask* mask)
 {
     this->SetNthInput(1, const_cast<TMask*>(mask));
 }
 
 template< typename TInput, typename TOutput, typename TMask >
 typename TInput::ConstPointer
-DiffusionEntropyMappingImageFilter<TInput, TOutput, TMask>::GetDWIImage()
+DiffusionComplexityMappingImageFilter<TInput, TOutput, TMask>::GetDWIImage()
 {
     return static_cast< const TInput * >
             ( this->ProcessObject::GetInput(0) );
@@ -61,7 +64,7 @@ DiffusionEntropyMappingImageFilter<TInput, TOutput, TMask>::GetDWIImage()
 
 template< typename TInput, typename TOutput, typename TMask >
 typename TMask::ConstPointer
-DiffusionEntropyMappingImageFilter<TInput, TOutput, TMask>::GetDiffusionSpace()
+DiffusionComplexityMappingImageFilter<TInput, TOutput, TMask>::GetDiffusionSpace()
 {
     return static_cast< const TMask * >
             ( this->ProcessObject::GetInput(1) );
@@ -70,7 +73,7 @@ DiffusionEntropyMappingImageFilter<TInput, TOutput, TMask>::GetDiffusionSpace()
 
 template< typename TInput, typename TOutput, typename TMask >
 void
-DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
+DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
 ::GenerateOutputInformation(void){
     OutputImageType *output = this->GetOutput();
     output->CopyInformation(this->GetDWIImage());
@@ -83,7 +86,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
 
 template< typename TInput, typename TOutput, typename TMask >
 void
-DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
+DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
 ::GenerateData()
 {
     unsigned int numberOfImages = 0;
@@ -92,11 +95,25 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
     double b0 = 0;
     std::vector<unsigned int> gradients;
     typename InputImageType::ConstPointer input = this->GetDWIImage();
-    typename OutputImageType::Pointer output = this->GetOutput();
+    typename OutputImageType::Pointer complexityMap = this->GetOutput();
+    typename OutputImageType::Pointer entropyMap;
+    typename OutputImageType::Pointer disequilibriumMap;
+    entropyMap = OutputImageType::New();
+    entropyMap->CopyInformation(complexityMap);
+    entropyMap->SetRegions(complexityMap->GetRequestedRegion());
+    entropyMap->Allocate();
+    entropyMap->FillBuffer(0);
+
+    disequilibriumMap = OutputImageType::New();
+    disequilibriumMap->CopyInformation(complexityMap);
+    disequilibriumMap->SetRegions(complexityMap->GetRequestedRegion());
+    disequilibriumMap->Allocate();
+    disequilibriumMap->FillBuffer(0);
+
     typename MaskImageType::Pointer usedMaskSpace;
     usedMaskSpace = MaskImageType::New();
-    usedMaskSpace->CopyInformation(output);
-    usedMaskSpace->SetRegions(output->GetRequestedRegion());
+    usedMaskSpace->CopyInformation(complexityMap);
+    usedMaskSpace->SetRegions(complexityMap->GetRequestedRegion());
     usedMaskSpace->Allocate();
 
     if (this->GetNumberOfIndexedInputs()==1) {
@@ -204,7 +221,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
 
     createDiffusionWeightedValues(diffusionAcquisitionImage, diffusionImage, numberOfGradientImages, b0);
 
-//    //Finding input minimum and maximum values only on the gradient volumes and also construct the global probability distribution
+    //Finding input minimum and maximum values only on the gradient volumes and also construct the global probability distribution
     OutputPixelType minimumInputValue = NumericTraits<OutputPixelType>::max();
     OutputPixelType maximumInputValue = NumericTraits<OutputPixelType>::min();
     getSpaceMaximumMinimumDiffusion(diffusionImage, usedMaskSpace, maximumInputValue, minimumInputValue);
@@ -219,18 +236,34 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
             cout<<"Manual number of bins: "<<m_HistogramBins<<endl;
         }
     }else{
-        m_HistogramBins = numberOfGradientImages;
+        m_HistogramBins = 2.0*numberOfGradientImages;
         if (m_DebugMode) {
             cout<<"Automatic number of bins: "<<m_HistogramBins<<endl;
         }
     }
 
-    calculatesEntropyMapping(output, diffusionImage, usedMaskSpace, maximumInputValue, minimumInputValue);
+    calculatesEntropyMapping(entropyMap, diffusionImage, usedMaskSpace, maximumInputValue, minimumInputValue);
+    calculatesDisequilibriumMapping(disequilibriumMap, diffusionImage, usedMaskSpace, maximumInputValue, minimumInputValue);
+
+    //Calculating the complexity map
+    typedef itk::ImageRegionIterator<OutputImageType>       OutputRegionIteratorType;
+    OutputRegionIteratorType        entropyIterator(entropyMap, entropyMap->GetRequestedRegion());
+    OutputRegionIteratorType        disequilibriumIterator(disequilibriumMap, disequilibriumMap->GetRequestedRegion());
+    OutputRegionIteratorType        complexIterator(complexityMap, complexityMap->GetRequestedRegion());
+    entropyIterator.GoToBegin();
+    disequilibriumIterator.GoToBegin();
+    complexIterator.GoToBegin();
+    while (!complexIterator.IsAtEnd()) {
+        complexIterator.Set(entropyIterator.Get()*disequilibriumIterator.Get());
+        ++complexIterator;
+        ++disequilibriumIterator;
+        ++entropyIterator;
+    }
 }
 
 template< typename TInput, typename TOutput, typename TMask >
 void
-DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
+DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
 ::createDiffusionSpace(typename InputImageType::Pointer diffImg, typename InputImageType::ConstPointer inputImg, std::vector<unsigned int> gradientsList)
 {
     unsigned int numberOfGradientImages=0, numberOfReferenceImages=0;
@@ -282,7 +315,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
 
 template< typename TInput, typename TOutput, typename TMask >
 void
-DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
+DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
 ::getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum)
 {
     typedef itk::ImageRegionIterator<InputImageType>        InputRegionIteratorType;
@@ -313,7 +346,7 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
 
 template< typename TInput, typename TOutput, typename TMask >
 void
-DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
+DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
 ::createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradientImages, unsigned int b0)
 {
     typedef itk::ImageRegionIterator<InputImageType>        InputRegionIteratorType;
@@ -342,18 +375,11 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
         ++diffIt;
         ++rawDiffIt;
     }
-
-
-    //    typedef itk::ImageFileWriter<InputImageType>    WriterType;
-    //    typename WriterType::Pointer w = WriterType::New();
-    //    w->SetInput(diffImg);
-    //    w->SetFileName("/home/antonio/Downloads/DiffusionEntropyMappingImageFilter/dwi_f_hard_data.nii.gz");
-    //    w->Update();
 }
 
 template< typename TInput, typename TOutput, typename TMask >
 void
-DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
+DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
 ::calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min)
 {
     //    Iterate over the entire diffusion space to get the information contained in each voxel
@@ -367,8 +393,6 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
     outputIterator.GoToBegin();
     maskIterator.GoToBegin();
 
-    //Normalize the entropy value regarding the equiprobable states ln(N)
-    double maxEntropy = std::log(m_HistogramBins);
     while (!outputIterator.IsAtEnd()) {
         if (maskIterator.Get()>static_cast<MaskPixelType>(0)) {
             //        Extract the vector data from voxel.
@@ -425,9 +449,9 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
             }
 
             if (m_QValue != 1.0) {
-                outputIterator.Set(((1.0 - entropy)/(m_QValue - 1.0))/maxEntropy);
+                outputIterator.Set(((1.0 - entropy)/(m_QValue - 1.0)));
             }else{
-                outputIterator.Set(entropy/maxEntropy);
+                outputIterator.Set(entropy);
             }
         }else{
             outputIterator.Set(0);
@@ -438,6 +462,119 @@ DiffusionEntropyMappingImageFilter< TInput, TOutput, TMask >
         ++maskIterator;
     }
 }
+
+template< typename TInput, typename TOutput, typename TMask >
+void
+DiffusionComplexityMappingImageFilter< TInput, TOutput, TMask >
+::calculatesDisequilibriumMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min)
+{
+    //    Iterate over the entire diffusion space to get the information contained in each voxel
+    typedef itk::ImageRegionIterator<InputImageType>        InputRegionIteratorType;
+    typedef itk::ImageRegionIterator<OutputImageType>       OutputRegionIteratorType;
+    typedef itk::ImageRegionIterator<MaskImageType>         MaskRegionIteratorType;
+    InputRegionIteratorType    diffIt(diffImg, diffImg->GetRequestedRegion());
+    OutputRegionIteratorType        outputIterator(output, output->GetRequestedRegion());
+    MaskRegionIteratorType      maskIterator(mask, mask->GetRequestedRegion());
+    diffIt.GoToBegin();
+    outputIterator.GoToBegin();
+    maskIterator.GoToBegin();
+
+    while (!outputIterator.IsAtEnd()) {
+        if (maskIterator.Get()>static_cast<MaskPixelType>(0)) {
+            //        Extract the vector data from voxel.
+            //        This iterative process runs through each voxel of the input image
+            //        where the diffusion gradients are allocated. With each voxel values
+            //        trends, it is possible to reconstruct a local histogram and then calculate
+            //        the local disequilibrium regarding the equilibirum PDF (adopted as the 1/N uniform distribution).
+            //Create the PDF for i-eth voxel
+            typename HistogramType::Pointer diffusionProbability = HistogramType::New();
+            typename HistogramType::SizeType size(1);
+
+            size.Fill(m_HistogramBins);
+
+            typename HistogramType::MeasurementVectorType lowerBound;
+            lowerBound.SetSize(m_HistogramBins);
+            lowerBound.Fill(0.0);
+
+            typename HistogramType::MeasurementVectorType upperBound;
+            upperBound.SetSize(m_HistogramBins);
+            upperBound.Fill(max);
+            diffusionProbability->SetMeasurementVectorSize(1);
+            diffusionProbability->Initialize(size, lowerBound, upperBound );
+
+            typename HistogramType::IndexType index(1);
+            typename HistogramType::MeasurementVectorType mv(1);
+
+            for (int j = 0; j < diffImg->GetNumberOfComponentsPerPixel(); ++j) {
+                if ( diffIt.Get()[j]>static_cast<OutputPixelType>(0) && !isinf(diffIt.Get()[j]) ) {
+                    mv[0]=diffIt.Get()[j];
+                    diffusionProbability->GetIndex(mv,index);
+                    diffusionProbability->IncreaseFrequencyOfIndex(index, 1);
+                }
+            }
+
+            //Calculate distance
+            OutputPixelType disequilibrium = 0.0, p_e = 1.0/m_HistogramBins, p = 0.0;
+            OutputPixelType S1 = 0.0, S1_plus_2 = 0.0;
+            std::vector<OutputPixelType> p1,p1_plus_2;
+            for (int j = 0; j < diffImg->GetNumberOfComponentsPerPixel(); ++j) {
+
+                p = static_cast<double>(diffusionProbability->GetFrequency(index))/static_cast<double>(diffusionProbability->GetTotalFrequency());
+                switch (m_DisequilibriumFunction) {
+                case EUCLIDEAN:
+                    disequilibrium += pow(p - p_e,2.0);
+                    break;
+                case WOOTER:
+                    disequilibrium += sqrt(p)*sqrt(p_e);
+                    break;
+                case KULLBACK_LEIBER:
+                    //NOTE: This measure is associated ONLY to Shannon entropy measure.
+                    if (p>0.0) {
+                        disequilibrium += p*log(p/p_e);
+                    }else{
+                        disequilibrium += 0.0;
+                    }
+                    break;
+                case JENSEN:
+                    //NOTE: This measure is associated ONLY to Shannon entropy measure.
+                    p1.push_back(p);
+                    p1_plus_2.push_back((p+p_e)/2.0);
+                    break;
+                default:
+                    break;
+                }
+            }
+            switch (m_DisequilibriumFunction) {
+            case WOOTER:
+                disequilibrium = acos(disequilibrium);
+                break;
+            case JENSEN:
+                for (unsigned int i = 0; i < p1.size(); ++i) {
+                    S1+=-p1[i]*log(p1[i]);
+                    S1_plus_2+=-p1_plus_2[i]*log(p1_plus_2[i]);
+                }
+                disequilibrium = S1_plus_2 - (S1/2.0) - (log(p_e)/2.0);
+                break;
+            }
+            outputIterator.Set(disequilibrium);
+        }else{
+            outputIterator.Set(0);
+        }
+
+
+        ++diffIt;
+        ++outputIterator;
+        ++maskIterator;
+    }
+
+//        typedef itk::ImageFileWriter<OutputImageType> WriterType;
+//        typename WriterType::Pointer w = WriterType::New();
+//        w->SetInput(output);
+//        w->SetFileName("/home/antonio/Downloads/DiffusionEntropyMappingImageFilter/disequilibrium.nii.gz");
+//        w->Update();
+}
+
+
 
 } // end namespace itk
 

@@ -1,5 +1,5 @@
-#ifndef __itkSampEn3DImageCalculator_h
-#define __itkSampEn3DImageCalculator_h
+#ifndef __itkSampEn2DImageCalculator_h
+#define __itkSampEn2DImageCalculator_h
 
 #include "itkObject.h"
 #include "itkObjectFactory.h"
@@ -7,12 +7,13 @@
 #include "itkStatisticsImageFilter.h"
 #include "itkNumericTraits.h"
 
-#include "stdlib.h"
+#include <stdlib.h>
+#include <math.h>
 #include <ctime>
 
 namespace itk
 {
-/** \class SampEn3DImageCalculator
+/** \class SampEn2DImageCalculator
  *  \brief Computes the minimum and the maximum intensity values of
  *         an image.
  *
@@ -30,29 +31,32 @@ namespace itk
  * \endwiki
  */
 template< typename TInputImage >
-class SampEn3DImageCalculator:public Object
+class SampEn2DImageCalculator:public Object
 {
 public:
     itkStaticConstMacro(InputImageDimension, unsigned int,
                         TInputImage::ImageDimension);
 
     /** Standard class typedefs. */
-    typedef SampEn3DImageCalculator Self;
+    typedef SampEn2DImageCalculator Self;
     typedef Object                        Superclass;
     typedef SmartPointer< Self >          Pointer;
     typedef SmartPointer< const Self >    ConstPointer;
 
     /** Type definition for the output image entropy value. This is the type which the image will be cast. */
+    typedef bool RFlagType;
     typedef double DoublePixelType;
     typedef unsigned int MParameterValueType;
     typedef double RParameterValueType;
+    typedef unsigned int DParameterValueType;
+    typedef double BParameterValueType;
     typedef ImageRegionConstIterator<TInputImage>       ConstRegionIteratorType;
 
     /** Method for creation through the object factory. */
     itkNewMacro(Self);
 
     /** Run-time type information (and related methods). */
-    itkTypeMacro(SampEn3DImageCalculator, Object);
+    itkTypeMacro(SampEn2DImageCalculator, Object);
 
     /** Type definition for the input image. */
     typedef TInputImage ImageType;
@@ -76,17 +80,33 @@ public:
     /** Set the input image. */
     itkSetConstObjectMacro(Image, ImageType);
 
+    /** Set the RParameterAsPercentage parameter value. */
+    itkSetMacro(UseRParameterAsPercentage, RFlagType)
+    itkBooleanMacro(UseRParameterAsPercentage)
+
     /** Set the M parameter value. */
     itkSetMacro(M, MParameterValueType);
 
     /** Set the R parameter value. */
     itkSetMacro(R, RParameterValueType);
 
+    /** Set the D (delay) parameter value. */
+    itkSetMacro(D, DParameterValueType);
+
+    /** Set the B (background value) parameter value. */
+    itkSetMacro(BGV, BParameterValueType);
+
     /** Get the M parameter value. */
     itkGetMacro(M, MParameterValueType);
 
     /** Get the R parameter value. */
     itkGetMacro(R, RParameterValueType);
+
+    /** Get the D parameter value. */
+    itkGetMacro(D, DParameterValueType);
+
+    /** Get the B parameter value. */
+    itkGetMacro(BGV, BParameterValueType);
 
     /** Compute the two-dimensional sample entropy value of the input image. */
     void ComputeEntropy(void);
@@ -99,35 +119,34 @@ public:
 
 
 protected:
-    SampEn3DImageCalculator();
-    virtual ~SampEn3DImageCalculator() {}
+    SampEn2DImageCalculator();
+    virtual ~SampEn2DImageCalculator() {}
     virtual void PrintSelf(std::ostream & os, Indent indent) const ITK_OVERRIDE;
 
 
 private:
-    SampEn3DImageCalculator(const Self &); //purposely not implemented
+    SampEn2DImageCalculator(const Self &); //purposely not implemented
     void operator=(const Self &);                //purposely not implemented
 
+    RFlagType           m_UseRParameterAsPercentage;
     DoublePixelType     m_Entropy;
     MParameterValueType m_M;
     RParameterValueType m_R;
+    DParameterValueType m_D;
+    BParameterValueType m_BGV;
     ImageConstPointer   m_Image;
 
-    /** Test to check the M and R parameters values */
-    void ParametersCertification();
-
-    bool similarNext(double* image, int x1, int y1, int x2, int y2, int m, double r);
-    bool similar(double* image, int x1, int y1, int x2, int y2, int m, double r);
+    /** Test to check the M, R, D and B parameters values */
+    void ParametersCertification(); 
 
     RegionType m_Region;
     bool       m_RegionSetByUser;
-    bool       m_IsSimilar;
-    int        m_Nx,m_Ny,m_Nz;
+    size_t        m_Nx,m_Ny;
 };
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkSampEn3DImageCalculator.hxx"
+#include "itkSampEn2DImageCalculator.hxx"
 #endif
 
-#endif /* __itkSampEn3DImageCalculator_h */
+#endif /* __itkSampEn2DImageCalculator_h */
