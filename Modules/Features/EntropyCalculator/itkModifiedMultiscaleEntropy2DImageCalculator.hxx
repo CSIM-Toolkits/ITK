@@ -128,6 +128,9 @@ ModifiedMultiscaleEntropy2DImageCalculator< TInputImage >
         tolerance = m_R;
     }
 
+    if (m_Entropy.size()>0) {
+        m_Entropy.clear();
+    }
     //Call SampeEn2D for S=1
     typedef itk::SampEn2DImageCalculator<TInputImage> SampEn2DType;
     typename SampEn2DType::Pointer sampEn2D = SampEn2DType::New();
