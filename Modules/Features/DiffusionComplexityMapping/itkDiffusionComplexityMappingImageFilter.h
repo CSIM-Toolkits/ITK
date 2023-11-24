@@ -84,6 +84,7 @@ public:
     itkGetMacro(QValue, float)
     itkGetMacro(HistogramBins, unsigned int)
     itkGetMacro(UseManualNumberOfBins, bool)
+    itkGetMacro(DisequilibriumFunction, unsigned char)
     itkGetMacro(DebugMode, bool)
 
 #ifdef ITK_USE_CONCEPT_CHECKING
@@ -116,7 +117,8 @@ private:
     void getSpaceMaximumMinimumDiffusion(typename InputImageType::Pointer diffImg,typename MaskImageType::Pointer mask, OutputPixelType& maximum, OutputPixelType& minimum);
     void createDiffusionWeightedValues(typename InputImageType::Pointer diffAcquitions, typename InputImageType::Pointer diffImg, unsigned int numberOfGradients, unsigned int b0);
     void calculatesEntropyMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min);
-    void calculatesDisequilibriumMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min);
+    void calculatesDisequilibriumMapping(typename OutputImageType::Pointer output, typename InputImageType::Pointer diffImg, typename MaskImageType::Pointer mask, OutputPixelType max, OutputPixelType min, unsigned int numberGradients);
+    unsigned int histogramBinByDiffusionVarianceRegression(unsigned int numberOfGradients, double max, double min);
 
     float m_QValue;
     unsigned int m_HistogramBins;
@@ -131,3 +133,4 @@ private:
 #endif
 
 #endif
+
