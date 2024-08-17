@@ -47,6 +47,9 @@ All methods are under the ITK license. However, if you use any of this methods i
 
 [Two-dimensional sample entropy: assessing image texture through irregularity, Biomedical Physics & Engineering Express, 2016](http://doi.org/10.1088/2057-1976/2/4/045002)
 
+## Diffusion Complexity Mapping
+[Assessing biological self-organization patterns using statistical complexity characteristics: a tool for diffusion tensor imaging analysis, Magnetic Resonance Materials in Physics, Biology and Medicine , 2024]([http://insight-journal.org/browse/publication/983](https://link.springer.com/article/10.1007/s10334-024-01185-4))
+
 ## Automatic Conductance Image Calculator
 
 [Automatic Conductance Estimation Methods for Anisotropic Diffusion ITK Filters, Insight-Journal, 2017](http://insight-journal.org/browse/publication/983)
