@@ -70,7 +70,7 @@ All methods are under the ITK license. However, if you use any of this methods i
 
 This repository is provided by the CSIM research group and if you want to give us a feedback or report a problem, please send an email to:
 
-Ph.D. Antonio Carlos da S. Senra Filho:  [email](mailto:acsenrafilho@usp.br), [ResearchGate](https://www.researchgate.net/profile/Antonio_Carlos_Senra_Filho)
+Ph.D. Antonio Carlos da S. Senra Filho:  [email](mailto:acsenrafilho@alumni.usp.br), [ResearchGate](https://www.researchgate.net/profile/Antonio_Carlos_Senra_Filho)
 
 Prof. Ph.D. Luiz Otavio Murta Junior (PI): [email](mailto:murta@usp.br), [ResearchGate](https://www.researchgate.net/profile/Luiz_Murta)
 
